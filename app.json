@@ -10,7 +10,11 @@
       "supportsTablet": true
     },
     "android": {
-      "package": "com.florencenightingales.app"
+      "package": "com.florencenightingales.app",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/icon.png",
+        "backgroundColor": "#FFFFFF"
+      }
     }
   }
 }

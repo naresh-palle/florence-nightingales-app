@@ -3,6 +3,13 @@ import { StyleSheet, SafeAreaView, Platform, View } from 'react-native';
 import { WebView } from 'react-native-webview';
 
 export default function App() {
+  const injectedCSS = `
+    var style = document.createElement('style');
+    style.innerHTML = ' .et_mobile_menu { background-color: #ffffff !important; opacity: 1 !important; z-index: 99999 !important; } .et-fixed-header { background-color: #ffffff !important; } ';
+    document.head.appendChild(style);
+    true;
+  `;
+
   return (
     <SafeAreaView style={styles.container}>
       <WebView 
@@ -11,6 +18,7 @@ export default function App() {
         scalesPageToFit={true}
         javaScriptEnabled={true}
         domStorageEnabled={true}
+        injectedJavaScript={injectedCSS}
       />
       <StatusBar style="dark" backgroundColor="#ffffff" />
     </SafeAreaView>
