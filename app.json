@@ -1,0 +1,16 @@
+{
+  "expo": {
+    "name": "Florence Nightingales",
+    "slug": "florence-nightingales-app",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "ios": {
+      "supportsTablet": true
+    },
+    "android": {
+      "package": "com.florencenightingales.app"
+    }
+  }
+}
