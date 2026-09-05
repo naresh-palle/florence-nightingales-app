@@ -16,7 +16,7 @@ app.get('/health', (req, res) => {
 
 import { exec } from 'child_process';
 
-const PORT = process.env.PORT || 3000;
+const PORT = Number(process.env.PORT) || 3000;
 
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`[Server] Secure Backend API running on port ${PORT}`);
