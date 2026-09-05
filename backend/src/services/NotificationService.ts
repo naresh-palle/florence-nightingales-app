@@ -1,9 +1,4 @@
-export enum NotificationChannel {
-  WHATSAPP = 'WHATSAPP',
-  SMS = 'SMS',
-  EMAIL = 'EMAIL',
-  PUSH = 'PUSH'
-}
+import { NotificationChannel } from '@prisma/client';
 
 interface NotificationPayload {
   to: string;

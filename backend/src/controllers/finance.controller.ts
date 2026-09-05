@@ -87,7 +87,7 @@ export const recordPayment = async (req: Request, res: Response) => {
 
       // 5. Recalculate balance and determine new Invoice Status
       const newTotalPaid = totalPaid.add(paymentAmount);
-      let newInvoiceStatus = InvoiceStatus.PARTIALLY_PAID;
+      let newInvoiceStatus: InvoiceStatus = InvoiceStatus.PARTIALLY_PAID;
 
       if (newTotalPaid.equals(invoice.total_amount)) {
         newInvoiceStatus = InvoiceStatus.PAID;
