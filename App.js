@@ -43,9 +43,9 @@ export default function App() {
         ) : (
           // User is signed in, route based on role
           <>
-            {userRole === 'ADMIN' && <Stack.Screen name="AdminDashboard" component={AdminDashboard} />}
-            {userRole === 'TEAM_LEAD' && <Stack.Screen name="TeamLeadDashboard" component={TeamLeadDashboard} />}
-            {userRole === 'EMPLOYEE' && <Stack.Screen name="EmployeeDashboard" component={EmployeeDashboard} />}
+            {userRole === 'ADMIN' && <Stack.Screen name="AdminDashboard">{(props) => <AdminDashboard {...props} token={userToken} />}</Stack.Screen>}
+            {userRole === 'TEAM_LEAD' && <Stack.Screen name="TeamLeadDashboard">{(props) => <TeamLeadDashboard {...props} token={userToken} />}</Stack.Screen>}
+            {userRole === 'EMPLOYEE' && <Stack.Screen name="EmployeeDashboard">{(props) => <EmployeeDashboard {...props} token={userToken} />}</Stack.Screen>}
           </>
         )}
       </Stack.Navigator>
