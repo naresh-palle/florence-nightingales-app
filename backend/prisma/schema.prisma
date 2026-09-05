@@ -1,0 +1,279 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum Role {
+  ADMIN
+  TEAM_LEAD
+  EMPLOYEE
+}
+
+enum UserStatus {
+  ACTIVE
+  INACTIVE
+  PENDING
+}
+
+enum CustomerStatus {
+  ACTIVE
+  PAUSED
+  COMPLETED
+  CANCELLED
+}
+
+enum AssignmentStatus {
+  PENDING
+  ASSIGNED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum TaskStatus {
+  TODO
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum InvoiceStatus {
+  DRAFT
+  ISSUED
+  PENDING
+  PARTIALLY_PAID
+  PAID
+  OVERDUE
+  CANCELLED
+}
+
+enum PaymentMethod {
+  CASH
+  BANK_TRANSFER
+  UPI
+  CARD
+  OTHER
+}
+
+enum PaymentStatus {
+  PENDING
+  CONFIRMED
+  FAILED
+  CANCELLED
+  REFUNDED
+}
+
+enum NotificationChannel {
+  WHATSAPP
+  SMS
+  EMAIL
+  PUSH
+}
+
+model User {
+  id               String       @id @default(uuid())
+  email            String       @unique
+  phone            String?
+  password_hash    String?      
+  role             Role
+  status           UserStatus   @default(PENDING)
+  full_name        String
+  designation      String?
+  qualification    String?
+  experience       String?
+  joining_date     DateTime?
+  
+  team_id          String?
+  team             Team?        @relation("TeamMembers", fields: [team_id], references: [id])
+  leading_teams    Team[]       @relation("TeamLead")
+
+  assignments      CareAssignment[]
+  tasks            Task[]
+  attendance       Attendance[]
+  payments_received Payment[]   @relation("ReceivedBy")
+  reminders_sent   PaymentReminder[] @relation("SentBy")
+  audit_logs_actor AuditLog[]   @relation("Actor")
+  
+  created_at       DateTime     @default(now())
+  updated_at       DateTime     @updatedAt
+}
+
+model Team {
+  id               String       @id @default(uuid())
+  name             String
+  description      String?
+  status           UserStatus   @default(ACTIVE)
+  
+  team_lead_id     String?
+  team_lead        User?        @relation("TeamLead", fields: [team_lead_id], references: [id])
+  
+  employees        User[]       @relation("TeamMembers")
+  customers        Customer[]
+  assignments      CareAssignment[]
+  tasks            Task[]
+
+  created_at       DateTime     @default(now())
+  updated_at       DateTime     @updatedAt
+}
+
+model Customer {
+  id               String       @id @default(uuid())
+  full_name        String
+  phone            String
+  email            String?
+  address          String?
+  emergency_contact String?
+  service_type     String?
+  service_start_date DateTime?
+  service_end_date   DateTime?
+  status           CustomerStatus @default(ACTIVE)
+  notes            String?
+
+  team_id          String
+  team             Team         @relation(fields: [team_id], references: [id])
+
+  assignments      CareAssignment[]
+  invoices         Invoice[]
+  payments         Payment[]
+  reminders        PaymentReminder[]
+
+  created_at       DateTime     @default(now())
+  updated_at       DateTime     @updatedAt
+}
+
+model CareAssignment {
+  id               String       @id @default(uuid())
+  service_type     String
+  start_date       DateTime
+  end_date         DateTime?
+  start_time       String?
+  end_time         String?
+  status           AssignmentStatus @default(PENDING)
+  notes            String?
+
+  customer_id      String
+  customer         Customer     @relation(fields: [customer_id], references: [id])
+  employee_id      String?
+  employee         User?        @relation(fields: [employee_id], references: [id])
+  team_id          String
+  team             Team         @relation(fields: [team_id], references: [id])
+
+  created_at       DateTime     @default(now())
+  updated_at       DateTime     @updatedAt
+}
+
+model Invoice {
+  id                   String       @id @default(uuid())
+  invoice_number       String       @unique
+  service_period_start DateTime
+  service_period_end   DateTime
+  billing_date         DateTime
+  due_date             DateTime
+  
+  total_amount         Decimal      @db.Decimal(10, 2)
+  status               InvoiceStatus @default(DRAFT)
+  notes                String?
+
+  customer_id          String
+  customer             Customer     @relation(fields: [customer_id], references: [id])
+
+  payments             Payment[]
+  reminders            PaymentReminder[]
+
+  created_at           DateTime     @default(now())
+  updated_at           DateTime     @updatedAt
+}
+
+model Payment {
+  id                   String       @id @default(uuid())
+  payment_reference    String       @unique
+  amount               Decimal      @db.Decimal(10, 2)
+  payment_date         DateTime
+  payment_method       PaymentMethod
+  transaction_reference String?
+  status               PaymentStatus @default(PENDING)
+  notes                String?
+
+  invoice_id           String
+  invoice              Invoice      @relation(fields: [invoice_id], references: [id])
+  customer_id          String
+  customer             Customer     @relation(fields: [customer_id], references: [id])
+  received_by_id       String
+  received_by          User         @relation("ReceivedBy", fields: [received_by_id], references: [id])
+
+  created_at           DateTime     @default(now())
+  updated_at           DateTime     @updatedAt
+}
+
+model PaymentReminder {
+  id                   String       @id @default(uuid())
+  outstanding_at_time  Decimal      @db.Decimal(10, 2)
+  channel              NotificationChannel
+  message_type         String?
+  sent_time            DateTime     @default(now())
+  delivery_status      String?
+
+  customer_id          String
+  customer             Customer     @relation(fields: [customer_id], references: [id])
+  invoice_id           String
+  invoice              Invoice      @relation(fields: [invoice_id], references: [id])
+  sender_id            String
+  sender               User         @relation("SentBy", fields: [sender_id], references: [id])
+}
+
+model Task {
+  id               String       @id @default(uuid())
+  title            String
+  description      String?
+  priority         String?
+  due_date         DateTime?
+  status           TaskStatus   @default(TODO)
+
+  employee_id      String
+  employee         User         @relation(fields: [employee_id], references: [id])
+  team_id          String
+  team             Team         @relation(fields: [team_id], references: [id])
+
+  created_at       DateTime     @default(now())
+  updated_at       DateTime     @updatedAt
+}
+
+model Attendance {
+  id               String       @id @default(uuid())
+  date             DateTime
+  check_in         DateTime?
+  check_out        DateTime?
+  location_data    String?
+
+  employee_id      String
+  employee         User         @relation(fields: [employee_id], references: [id])
+
+  created_at       DateTime     @default(now())
+  updated_at       DateTime     @updatedAt
+}
+
+model AuditLog {
+  id               String       @id @default(uuid())
+  action           String
+  entity_type      String
+  entity_id        String
+  timestamp        DateTime     @default(now())
+  ip_address       String?
+  device_id        String?
+  metadata         String?      
+  result           String
+
+  actor_user_id    String?
+  actor            User?        @relation("Actor", fields: [actor_user_id], references: [id])
+}
+
+model OrganizationSetting {
+  id               String       @id @default(uuid())
+  key              String       @unique
+  value            String
+  updated_at       DateTime     @updatedAt
+}

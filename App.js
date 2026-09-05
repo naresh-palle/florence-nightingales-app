@@ -1,37 +1,54 @@
-import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, SafeAreaView, Platform, View } from 'react-native';
-import { WebView } from 'react-native-webview';
+import React, { useState, useEffect } from 'react';
+import { NavigationContainer } from '@react-navigation/native';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import LoginScreen from './src/screens/LoginScreen';
+import AdminDashboard from './src/screens/AdminDashboard';
+import TeamLeadDashboard from './src/screens/TeamLeadDashboard';
+import EmployeeDashboard from './src/screens/EmployeeDashboard';
+import { ActivityIndicator, View } from 'react-native';
+
+const Stack = createNativeStackNavigator();
 
 export default function App() {
-  const injectedCSS = `
-    var style = document.createElement('style');
-    style.innerHTML = ' .et_mobile_menu { background-color: #ffffff !important; opacity: 1 !important; z-index: 99999 !important; } .et-fixed-header { background-color: #ffffff !important; } ';
-    document.head.appendChild(style);
-    true;
-  `;
+  const [isLoading, setIsLoading] = useState(true);
+  const [userToken, setUserToken] = useState(null);
+  const [userRole, setUserRole] = useState(null); // 'ADMIN', 'TEAM_LEAD', 'EMPLOYEE'
+
+  useEffect(() => {
+    // In a real app, we would load the token from SecureStore here
+    setTimeout(() => {
+      setIsLoading(false);
+    }, 1000);
+  }, []);
+
+  if (isLoading) {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+        <ActivityIndicator size="large" color="#0000ff" />
+      </View>
+    );
+  }
 
   return (
-    <SafeAreaView style={styles.container}>
-      <WebView 
-        source={{ uri: 'https://www.florencenightingales.in/' }} 
-        style={styles.webview}
-        scalesPageToFit={true}
-        javaScriptEnabled={true}
-        domStorageEnabled={true}
-        injectedJavaScript={injectedCSS}
-      />
-      <StatusBar style="dark" backgroundColor="#ffffff" />
-    </SafeAreaView>
+    <NavigationContainer>
+      <Stack.Navigator screenOptions={{ headerShown: false }}>
+        {userToken == null ? (
+          // No token found, user isn't signed in
+          <Stack.Screen name="Login">
+            {(props) => <LoginScreen {...props} setAuth={(token, role) => {
+              setUserToken(token);
+              setUserRole(role);
+            }} />}
+          </Stack.Screen>
+        ) : (
+          // User is signed in, route based on role
+          <>
+            {userRole === 'ADMIN' && <Stack.Screen name="AdminDashboard" component={AdminDashboard} />}
+            {userRole === 'TEAM_LEAD' && <Stack.Screen name="TeamLeadDashboard" component={TeamLeadDashboard} />}
+            {userRole === 'EMPLOYEE' && <Stack.Screen name="EmployeeDashboard" component={EmployeeDashboard} />}
+          </>
+        )}
+      </Stack.Navigator>
+    </NavigationContainer>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#ffffff',
-    paddingTop: Platform.OS === 'android' ? 25 : 0,
-  },
-  webview: {
-    flex: 1,
-  }
-});
