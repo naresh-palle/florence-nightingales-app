@@ -1,10 +1,10 @@
 {
   "expo": {
-    "name": "Florence Nightingales",
+    "name": "FN",
     "slug": "florence-nightingales-app",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
+    "icon": "./assets/icon.jpg",
     "userInterfaceStyle": "light",
     "ios": {
       "supportsTablet": true
@@ -12,7 +12,7 @@
     "android": {
       "package": "com.florencenightingales.app",
       "adaptiveIcon": {
-        "foregroundImage": "./assets/icon.png",
+        "foregroundImage": "./assets/adaptive-icon.jpg",
         "backgroundColor": "#FFFFFF"
       }
     }
