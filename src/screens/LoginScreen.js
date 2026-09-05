@@ -7,26 +7,45 @@ export default function LoginScreen({ setAuth }) {
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleLogin = () => {
+  const handleLogin = async () => {
     setIsLoading(true);
     
-    // Simulate API Call to our new backend
-    setTimeout(() => {
-      setIsLoading(false);
-      // For demonstration, typing 'admin' logs you in as Admin.
-      // In production, this hits our secure /api/auth/login endpoint.
-      if (email.toLowerCase() === 'admin') {
-        setAuth('dummy-token', 'ADMIN');
-      } else if (email.toLowerCase() === 'lead') {
-        setAuth('dummy-token', 'TEAM_LEAD');
-      } else {
-        setAuth('dummy-token', 'EMPLOYEE');
+    try {
+      const response = await fetch('https://florence-nightingales-app.onrender.com/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: email.toLowerCase(), password })
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        Alert.alert("Login Failed", data.error || "Invalid credentials");
+        setIsLoading(false);
+        return;
       }
-    }, 1500);
+
+      // Successfully logged in!
+      setAuth(data.token, data.user.role);
+    } catch (error) {
+      Alert.alert("Network Error", "Could not connect to the server.");
+      setIsLoading(false);
+    }
   };
 
-  const handleForgotPassword = () => {
-    Alert.alert("Forgot Password", "If an account exists for this email, password reset instructions have been sent.");
+  const handleForgotPassword = async () => {
+    if (!email) {
+      Alert.alert("Required", "Please enter your email first.");
+      return;
+    }
+    try {
+      await fetch('https://florence-nightingales-app.onrender.com/api/auth/forgot-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: email.toLowerCase() })
+      });
+      Alert.alert("Forgot Password", "If an account exists for this email, password reset instructions have been sent.");
+    } catch(e) {}
   };
 
   return (
