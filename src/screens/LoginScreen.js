@@ -6,6 +6,7 @@ export default function LoginScreen({ setAuth }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   const handleLogin = async () => {
     setIsLoading(true);
@@ -67,13 +68,18 @@ export default function LoginScreen({ setAuth }) {
           autoCapitalize="none"
         />
         
-        <TextInput
-          style={styles.input}
-          placeholder="Password"
-          value={password}
-          onChangeText={setPassword}
-          secureTextEntry
-        />
+        <View style={styles.passwordContainer}>
+          <TextInput
+            style={styles.passwordInput}
+            placeholder="Password"
+            value={password}
+            onChangeText={setPassword}
+            secureTextEntry={!showPassword}
+          />
+          <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={styles.showButton}>
+            <Text style={styles.showText}>{showPassword ? "Hide" : "Show"}</Text>
+          </TouchableOpacity>
+        </View>
 
         <TouchableOpacity onPress={handleForgotPassword} style={styles.forgotPassword}>
           <Text style={styles.forgotText}>Forgot Password?</Text>
@@ -87,7 +93,6 @@ export default function LoginScreen({ setAuth }) {
           <Text style={styles.buttonText}>{isLoading ? 'Authenticating...' : 'Secure Login'}</Text>
         </TouchableOpacity>
         
-        {/* Notice: No Public Signup Button Here! */}
       </View>
     </SafeAreaView>
   );
@@ -100,6 +105,10 @@ const styles = StyleSheet.create({
   title: { fontSize: 24, fontWeight: 'bold', textAlign: 'center', color: '#1a365d' },
   subtitle: { fontSize: 14, textAlign: 'center', color: '#718096', marginBottom: 40 },
   input: { borderWidth: 1, borderColor: '#e2e8f0', borderRadius: 8, padding: 16, marginBottom: 16, fontSize: 16 },
+  passwordContainer: { flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderColor: '#e2e8f0', borderRadius: 8, marginBottom: 16 },
+  passwordInput: { flex: 1, padding: 16, fontSize: 16 },
+  showButton: { padding: 16 },
+  showText: { color: '#3182ce', fontWeight: 'bold' },
   forgotPassword: { alignSelf: 'flex-end', marginBottom: 24 },
   forgotText: { color: '#3182ce', fontSize: 14 },
   button: { backgroundColor: '#e53e3e', padding: 16, borderRadius: 8, alignItems: 'center' },
