@@ -50,6 +50,7 @@ export const getOrganizationStats = async (req: Request, res: Response) => {
       pendingAmount: pendingPayments._sum.total_amount || 0
     });
   } catch (error) {
+    console.error('Stats error:', error);
     res.status(500).json({ error: 'Failed to fetch stats' });
   }
 };

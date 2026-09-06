@@ -60,23 +60,24 @@ export const createEmployee = async (req: Request, res: Response) => {
   }
 };
 
-// Get Employees (Team Leads only see their own)
+// Get Employees (Team Leads only see their own team; Admin sees ALL users)
 export const getEmployees = async (req: Request, res: Response) => {
   try {
-    let whereClause = {};
+    let whereClause: any = {};
     
-    // Enforce Team Scope at the database query level
     if (req.user?.role === Role.TEAM_LEAD) {
-      whereClause = { team_id: req.user.team_id, role: Role.EMPLOYEE };
-    } else if (req.user?.role === Role.ADMIN) {
-      whereClause = { role: Role.EMPLOYEE };
+      // Team Lead sees only employees within their team
+      whereClause = { team_id: req.user.team_id };
     }
+    // Admin sees everyone (no filter)
 
     const employees = await prisma.user.findMany({
       where: whereClause,
       select: {
-        id: true, full_name: true, email: true, phone: true, designation: true, status: true, team_id: true
-      }
+        id: true, full_name: true, email: true, phone: true,
+        designation: true, status: true, team_id: true, role: true
+      },
+      orderBy: { role: 'asc' }
     });
 
     res.json(employees);
