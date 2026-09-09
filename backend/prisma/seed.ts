@@ -22,6 +22,12 @@ async function main() {
   let team2 = await prisma.team.findFirst({ where: { name: 'Beta Home Care Team' } });
   if (!team2) team2 = await prisma.team.create({ data: { name: 'Beta Home Care Team', description: 'Elderly and post-surgery home care - Hyderabad East' } });
 
+  let team3 = await prisma.team.findFirst({ where: { name: 'Gamma Physiotherapy Team' } });
+  if (!team3) team3 = await prisma.team.create({ data: { name: 'Gamma Physiotherapy Team', description: 'Specialized physiotherapy and rehab - Secunderabad' } });
+
+  let team4 = await prisma.team.findFirst({ where: { name: 'Delta General Care' } });
+  if (!team4) team4 = await prisma.team.create({ data: { name: 'Delta General Care', description: 'General nursing and routine checkups - Cyberabad' } });
+
   const lead1 = await prisma.user.upsert({
     where: { email: 'prashanth@florence.com' },
     update: { status: UserStatus.ACTIVE, password_hash: pw, team_id: team1.id },
@@ -36,6 +42,20 @@ async function main() {
   });
   await prisma.team.update({ where: { id: team2.id }, data: { team_lead_id: lead2.id } });
 
+  const lead3 = await prisma.user.upsert({
+    where: { email: 'vikram@florence.com' },
+    update: { status: UserStatus.ACTIVE, password_hash: pw, team_id: team3.id },
+    create: { email: 'vikram@florence.com', full_name: 'Vikram Singh', phone: '9000000006', password_hash: pw, role: Role.TEAM_LEAD, status: UserStatus.ACTIVE, designation: 'Rehab Team Lead', team_id: team3.id },
+  });
+  await prisma.team.update({ where: { id: team3.id }, data: { team_lead_id: lead3.id } });
+
+  const lead4 = await prisma.user.upsert({
+    where: { email: 'meera@florence.com' },
+    update: { status: UserStatus.ACTIVE, password_hash: pw, team_id: team4.id },
+    create: { email: 'meera@florence.com', full_name: 'Meera Das', phone: '9000000007', password_hash: pw, role: Role.TEAM_LEAD, status: UserStatus.ACTIVE, designation: 'General Care Lead', team_id: team4.id },
+  });
+  await prisma.team.update({ where: { id: team4.id }, data: { team_lead_id: lead4.id } });
+
   const staff1 = await prisma.user.upsert({
     where: { email: 'swetha@florence.com' },
     update: { status: UserStatus.ACTIVE, password_hash: pw, team_id: team1.id },
@@ -46,6 +66,24 @@ async function main() {
     where: { email: 'ravi@florence.com' },
     update: { status: UserStatus.ACTIVE, password_hash: pw, team_id: team1.id },
     create: { email: 'ravi@florence.com', full_name: 'Ravi Kumar', phone: '9000000005', password_hash: pw, role: Role.EMPLOYEE, status: UserStatus.ACTIVE, designation: 'Nursing Assistant', qualification: 'GNM', experience: '1 year', joining_date: new Date('2023-01-15'), team_id: team1.id },
+  });
+
+  const staff3 = await prisma.user.upsert({
+    where: { email: 'arjun@florence.com' },
+    update: { status: UserStatus.ACTIVE, password_hash: pw, team_id: team2.id },
+    create: { email: 'arjun@florence.com', full_name: 'Arjun Menon', phone: '9000000008', password_hash: pw, role: Role.EMPLOYEE, status: UserStatus.ACTIVE, designation: 'Home Care Nurse', qualification: 'B.Sc Nursing', experience: '2 years', joining_date: new Date('2024-03-10'), team_id: team2.id },
+  });
+
+  const staff4 = await prisma.user.upsert({
+    where: { email: 'priya@florence.com' },
+    update: { status: UserStatus.ACTIVE, password_hash: pw, team_id: team3.id },
+    create: { email: 'priya@florence.com', full_name: 'Priya Iyer', phone: '9000000009', password_hash: pw, role: Role.EMPLOYEE, status: UserStatus.ACTIVE, designation: 'Physiotherapist', qualification: 'BPT', experience: '4 years', joining_date: new Date('2021-11-20'), team_id: team3.id },
+  });
+
+  const staff5 = await prisma.user.upsert({
+    where: { email: 'kiran@florence.com' },
+    update: { status: UserStatus.ACTIVE, password_hash: pw, team_id: team4.id },
+    create: { email: 'kiran@florence.com', full_name: 'Kiran Rao', phone: '9000000010', password_hash: pw, role: Role.EMPLOYEE, status: UserStatus.ACTIVE, designation: 'Staff Nurse', qualification: 'GNM', experience: '5 years', joining_date: new Date('2020-05-05'), team_id: team4.id },
   });
 
   console.log('✅ Users created');
