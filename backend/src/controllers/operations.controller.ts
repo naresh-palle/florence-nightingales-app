@@ -295,7 +295,6 @@ export const checkOutShift = async (req: Request, res: Response) => {
       data: {
         employee_id: req.user!.id,
         date: new Date(),
-        status: 'PRESENT',
         check_in: shift.actual_start,
         check_out: shift.actual_end
       }
