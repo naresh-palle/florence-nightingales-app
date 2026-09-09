@@ -3,7 +3,7 @@ import { authenticate } from '../middleware/auth';
 import { requireRole } from '../middleware/rbac';
 import { createEmployee, getEmployees, deactivateEmployee } from '../controllers/employee.controller';
 import { createCustomer, getCustomers, getCustomerDetail } from '../controllers/customer.controller';
-import { getAssignments, createAssignment, getTasks, getAttendance, getTeamInvoices, getPatients, getEnquiries, getCatalog, createQuotation, getQuotations, getShifts, checkInShift, checkOutShift, requestLeave, getIncidents, createIncident } from '../controllers/operations.controller';
+import { getAssignments, createAssignment, getTasks, getAttendance, getTeamInvoices, getPatients, getEnquiries, getCatalog, createQuotation, getQuotations, getShifts, checkInShift, checkOutShift, requestLeave, getIncidents, createIncident, getAvailableReplacements, reassignShift } from '../controllers/operations.controller';
 import { Role } from '@prisma/client';
 
 const router = Router();
@@ -34,6 +34,8 @@ router.get('/assignments', requireRole([Role.ADMIN, Role.TEAM_LEAD, Role.EMPLOYE
 router.get('/shifts', requireRole([Role.ADMIN, Role.TEAM_LEAD, Role.EMPLOYEE]), getShifts);
 router.post('/shifts/:id/check-in', requireRole([Role.EMPLOYEE]), checkInShift);
 router.post('/shifts/:id/check-out', requireRole([Role.EMPLOYEE]), checkOutShift);
+router.get('/shifts/:id/replacements', requireRole([Role.ADMIN, Role.TEAM_LEAD]), getAvailableReplacements);
+router.post('/shifts/:id/reassign', requireRole([Role.ADMIN, Role.TEAM_LEAD]), reassignShift);
 
 // Leave Routes
 router.post('/leaves', requireRole([Role.EMPLOYEE]), requestLeave);

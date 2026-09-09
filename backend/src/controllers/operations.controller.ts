@@ -376,3 +376,58 @@ export const createIncident = async (req: Request, res: Response) => {
     res.status(500).json({ error: 'Failed to create incident' });
   }
 };
+
+export const getAvailableReplacements = async (req: Request, res: Response) => {
+  try {
+    const shiftId = req.params.id;
+    const shift = await prisma.shift.findUnique({
+      where: { id: shiftId },
+      include: { assignment: { include: { team: true } }, employee: true }
+    });
+
+    if (!shift) return res.status(404).json({ error: 'Shift not found' });
+
+    // Find employees in the same team who are active and not currently scheduled for a conflicting shift
+    const teamMembers = await prisma.user.findMany({
+      where: {
+        team_id: shift.assignment.team_id,
+        role: shift.employee.role,
+        status: 'ACTIVE',
+        id: { not: shift.employee_id }
+      },
+      include: {
+        shifts: {
+          where: {
+            shift_date: shift.shift_date,
+            status: { in: ['SCHEDULED', 'IN_PROGRESS'] }
+          }
+        }
+      }
+    });
+
+    // Simple conflict check (can be improved with exact time overlaps)
+    const available = teamMembers.filter(m => m.shifts.length === 0);
+    
+    res.json(available.map(u => ({ id: u.id, full_name: u.full_name, phone: u.phone, role: u.role })));
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to find replacements' });
+  }
+};
+
+export const reassignShift = async (req: Request, res: Response) => {
+  const { new_employee_id } = req.body;
+  try {
+    const shift = await prisma.shift.update({
+      where: { id: req.params.id },
+      data: { employee_id: new_employee_id, status: 'SCHEDULED', actual_start: null, actual_end: null }
+    });
+
+    await prisma.auditLog.create({
+      data: { action: 'SHIFT_REASSIGNED', entity_type: 'SHIFT', entity_id: shift.id, actor_user_id: req.user?.id, result: 'SUCCESS' }
+    });
+
+    res.json(shift);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to reassign shift' });
+  }
+};

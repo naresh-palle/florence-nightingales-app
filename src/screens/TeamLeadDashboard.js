@@ -345,6 +345,69 @@ const QuotesTab = ({ token }) => {
   );
 };
 
+// ── SCHEDULE & REPLACEMENTS ───────────────────────────────────────────────────
+const ScheduleTab = ({ token }) => {
+  const { data, loading, refreshing, onRefresh } = useFetch(`${API}/api/operations/shifts`, token);
+  if (loading) return <Loading />;
+  const shifts = Array.isArray(data) ? data : [];
+  
+  const handleFindReplacement = async (shift) => {
+    try {
+      const res = await fetch(`${API}/api/operations/shifts/${shift.id}/replacements`, { headers: { Authorization: `Bearer ${token}` } });
+      const replacements = await res.json();
+      if (replacements.length === 0) {
+        alert('No available replacements found for this shift.');
+        return;
+      }
+      
+      // Auto-assign the first available replacement for demo purposes
+      await fetch(`${API}/api/operations/shifts/${shift.id}/reassign`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ new_employee_id: replacements[0].id })
+      });
+      alert(`Shift successfully reassigned to ${replacements[0].full_name}`);
+      onRefresh();
+    } catch(e) {
+      console.error(e);
+    }
+  };
+
+  return (
+    <FlatList
+      style={s.screen}
+      data={shifts}
+      keyExtractor={i => i.id}
+      ItemSeparatorComponent={Divider}
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+      ListHeaderComponent={() => (
+        <>
+          <DashHeader title="Team Schedule" subtitle="Manage shifts and replacements" />
+          <View style={s.body}><Text style={s.sectionTitle}>Upcoming Shifts ({shifts.length})</Text></View>
+        </>
+      )}
+      ListEmptyComponent={<Empty msg="No scheduled shifts for your team" />}
+      renderItem={({ item }) => (
+        <View style={s.invoiceCard}>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+            <Text style={s.name}>{item.employee?.full_name}</Text>
+            <StatusBadge label={item.status} />
+          </View>
+          <Text style={s.muted}>Patient: {item.assignment?.patient?.full_name}</Text>
+          <Text style={s.muted}>📅 {new Date(item.shift_date).toLocaleDateString('en-IN')} | ⏱️ {item.start_time} - {item.end_time}</Text>
+          
+          {item.status === 'SCHEDULED' && (
+            <TouchableOpacity style={[s.btn, { marginTop: 12, backgroundColor: '#d69e2e' }]} onPress={() => handleFindReplacement(item)}>
+              <Text style={s.btnText}>Find Replacement (AI Match)</Text>
+            </TouchableOpacity>
+          )}
+        </View>
+      )}
+      contentContainerStyle={{ paddingBottom: 40 }}
+    />
+  );
+};
+
 // ── INCIDENTS ──────────────────────────────────────────────────────────────────
 const IncidentsTab = ({ token }) => {
   const { data, loading, refreshing, onRefresh } = useFetch(`${API}/api/operations/incidents`, token);
@@ -399,18 +462,18 @@ export default function TeamLeadDashboard({ token }) {
         tabBarActiveTintColor: '#3182ce',
         tabBarInactiveTintColor: '#a0aec0',
         tabBarStyle: { borderTopWidth: 0, elevation: 10, shadowOpacity: 0.1 },
-        tabBarLabelStyle: { fontSize: 11, fontWeight: '600' },
+        tabBarLabelStyle: { fontSize: 10, fontWeight: '600' },
         tabBarIcon: ({ color }) => {
-          const icons = { Enquiries: '🛎️', Quotes: '📄', Patients: '🤝', Assignments: '📋', Payments: '💳' };
-          return <Text style={{ fontSize: 20, color }}>{icons[route.name]}</Text>;
+          const icons = { Enquiries: '🛎️', Patients: '🤝', Schedule: '🗓️', Payments: '💳', Helpdesk: '🆘' };
+          return <Text style={{ fontSize: 18, color }}>{icons[route.name]}</Text>;
         }
       })}
     >
       <Tab.Screen name="Enquiries">{() => <EnquiriesTab token={token} />}</Tab.Screen>
-      <Tab.Screen name="Quotes">{() => <QuotesTab token={token} />}</Tab.Screen>
       <Tab.Screen name="Patients">{() => <PatientsTab token={token} />}</Tab.Screen>
-      <Tab.Screen name="Assignments">{() => <AssignmentsTab token={token} />}</Tab.Screen>
+      <Tab.Screen name="Schedule">{() => <ScheduleTab token={token} />}</Tab.Screen>
       <Tab.Screen name="Payments">{() => <PaymentsTab token={token} />}</Tab.Screen>
+      <Tab.Screen name="Helpdesk">{() => <IncidentsTab token={token} />}</Tab.Screen>
     </Tab.Navigator>
   );
 }
