@@ -70,7 +70,8 @@ export default function LoginScreen({ setAuth }) {
               <TextInput
                 style={s.input}
                 placeholder="Enter your email"
-                placeholderTextColor="#a0aec0"
+                placeholderTextColor="#94a3b8"
+                selectionColor="#ffffff"
                 value={email}
                 onChangeText={setEmail}
                 autoCapitalize="none"
@@ -82,7 +83,8 @@ export default function LoginScreen({ setAuth }) {
                 <TextInput
                   style={s.passwordInput}
                   placeholder="Enter your password"
-                  placeholderTextColor="#a0aec0"
+                  placeholderTextColor="#94a3b8"
+                  selectionColor="#ffffff"
                   value={password}
                   onChangeText={setPassword}
                   secureTextEntry={!showPassword}
@@ -118,27 +120,63 @@ export default function LoginScreen({ setAuth }) {
 
 const s = StyleSheet.create({
   bg: { flex: 1 },
-  overlay: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(10,30,60,0.55)' },
+  overlay: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(10, 25, 45, 0.45)' },
   safe: { flex: 1 },
   scroll: { flexGrow: 1, justifyContent: 'center', padding: 20, paddingBottom: 40 },
-  logoCard: { alignItems: 'center', marginBottom: 28 },
-  logo: { width: 90, height: 90, borderRadius: 20, marginBottom: 12, borderWidth: 2, borderColor: 'rgba(255,255,255,0.3)' },
-  appName: { fontSize: 26, fontWeight: '800', color: '#fff', textShadowColor: 'rgba(0,0,0,0.4)', textShadowRadius: 4 },
-  tagline: { fontSize: 13, color: 'rgba(255,255,255,0.75)', marginTop: 4, letterSpacing: 0.5 },
-  card: { backgroundColor: 'transparent', borderRadius: 20, padding: 24 },
-  cardTitle: { fontSize: 22, fontWeight: '800', color: '#fff', marginBottom: 2 },
-  cardSub: { fontSize: 12, color: '#e2e8f0', marginBottom: 24 },
-  label: { fontSize: 13, fontWeight: '600', color: '#e2e8f0', marginBottom: 6 },
-  input: { borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.3)', borderRadius: 12, padding: 14, fontSize: 15, color: '#fff', backgroundColor: 'rgba(255, 255, 255, 0.15)', marginBottom: 16 },
-  passwordRow: { flexDirection: 'row', alignItems: 'center', borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.3)', borderRadius: 12, backgroundColor: 'rgba(255, 255, 255, 0.15)', marginBottom: 10 },
-  passwordInput: { flex: 1, padding: 14, fontSize: 15, color: '#fff' },
+  logoCard: { alignItems: 'center', marginBottom: 24 },
+  logo: { width: 88, height: 88, borderRadius: 20, marginBottom: 12, borderWidth: 2, borderColor: 'rgba(255,255,255,0.4)' },
+  appName: { fontSize: 26, fontWeight: '800', color: '#ffffff', textShadowColor: 'rgba(0,0,0,0.8)', textShadowRadius: 8, textShadowOffset: { width: 0, height: 2 } },
+  tagline: { fontSize: 13, color: '#e2e8f0', marginTop: 4, letterSpacing: 0.5, textShadowColor: 'rgba(0,0,0,0.8)', textShadowRadius: 6, textShadowOffset: { width: 0, height: 1 } },
+  card: {
+    backgroundColor: 'rgba(15, 23, 42, 0.88)',
+    borderRadius: 24,
+    padding: 24,
+    borderWidth: 1.5,
+    borderColor: 'rgba(255, 255, 255, 0.22)',
+    shadowColor: '#000',
+    shadowOpacity: 0.4,
+    shadowRadius: 18,
+    elevation: 10
+  },
+  cardTitle: { fontSize: 24, fontWeight: '800', color: '#ffffff', marginBottom: 4 },
+  cardSub: { fontSize: 13, color: '#cbd5e1', marginBottom: 22 },
+  label: { fontSize: 14, fontWeight: '700', color: '#f1f5f9', marginBottom: 6 },
+  input: {
+    borderWidth: 1.5,
+    borderColor: 'rgba(255,255,255,0.35)',
+    borderRadius: 12,
+    padding: 14,
+    fontSize: 15,
+    color: '#ffffff',
+    backgroundColor: 'rgba(30, 41, 59, 0.8)',
+    marginBottom: 16
+  },
+  passwordRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1.5,
+    borderColor: 'rgba(255,255,255,0.35)',
+    borderRadius: 12,
+    backgroundColor: 'rgba(30, 41, 59, 0.8)',
+    marginBottom: 10
+  },
+  passwordInput: { flex: 1, padding: 14, fontSize: 15, color: '#ffffff' },
   eyeBtn: { padding: 14 },
   eyeText: { fontSize: 18 },
   forgot: { alignSelf: 'flex-end', marginBottom: 24 },
-  forgotText: { color: '#90cdf4', fontSize: 13, fontWeight: '600' },
-  btn: { backgroundColor: '#c53030', borderRadius: 14, padding: 16, alignItems: 'center', shadowColor: '#c53030', shadowOpacity: 0.4, shadowRadius: 8, elevation: 4 },
-  btnDisabled: { backgroundColor: '#fc8181' },
-  btnText: { color: '#fff', fontSize: 16, fontWeight: '800', letterSpacing: 0.5 },
-  notice: { marginTop: 20, alignItems: 'center' },
-  noticeText: { color: '#cbd5e0', fontSize: 12 },
+  forgotText: { color: '#60a5fa', fontSize: 13, fontWeight: '700' },
+  btn: {
+    backgroundColor: '#dc2626',
+    borderRadius: 14,
+    padding: 16,
+    alignItems: 'center',
+    shadowColor: '#dc2626',
+    shadowOpacity: 0.5,
+    shadowRadius: 8,
+    elevation: 6
+  },
+  btnDisabled: { backgroundColor: '#f87171' },
+  btnText: { color: '#ffffff', fontSize: 16, fontWeight: '800', letterSpacing: 0.5 },
+  notice: { marginTop: 22, alignItems: 'center' },
+  noticeText: { color: '#94a3b8', fontSize: 12 },
 });

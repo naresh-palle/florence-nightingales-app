@@ -43,9 +43,9 @@ const DashHeader = ({ title, subtitle, color1 = '#1a365d', color2 = '#2c5282', o
 const hdr = StyleSheet.create({
   wrap: { height: 110, justifyContent: 'flex-end' },
   overlay: { ...StyleSheet.absoluteFillObject },
-  inner: { padding: 16, paddingBottom: 14 },
-  title: { fontSize: 22, fontWeight: '800', color: '#fff' },
-  sub: { fontSize: 13, color: 'rgba(255,255,255,0.8)', marginTop: 2 },
+  inner: { padding: 16 },
+  title: { fontSize: 20, fontWeight: '800', color: '#fff' },
+  sub: { fontSize: 12, color: 'rgba(255,255,255,0.8)', marginTop: 2 },
 });
 
 const Loading = ({ color }) => (
@@ -69,22 +69,51 @@ const SeparatorLine = () => <View style={{ height: 1, backgroundColor: '#edf2f7'
 
 // ── OVERVIEW ──────────────────────────────────────────────────────────────────
 const OverviewTab = ({ token, onLogout, navigation }) => {
-  const { data: stats, loading } = useFetch(`${API}/api/admin/stats`, token);
+  const { data: stats, loading, refreshing, onRefresh } = useFetch(`${API}/api/admin/stats`, token);
+  const [seeding, setSeeding] = useState(false);
+
   const statItems = [
-    { icon: '👥', label: 'Active Users', value: stats?.totalUsers, color: '#3182ce', nav: 'Teams' },
-    { icon: '🏥', label: 'Teams', value: stats?.totalTeams, color: '#805ad5', nav: 'Teams' },
-    { icon: '🤝', label: 'Customers', value: stats?.totalCustomers, color: '#38a169', nav: 'Teams' },
-    { icon: '🧾', label: 'Invoices', value: stats?.totalInvoices, color: '#d69e2e', nav: 'Finance' },
+    { icon: '👥', label: 'Active Users', value: stats?.totalUsers, color: '#3182ce', nav: 'Teams', filter: 'PERSONNEL' },
+    { icon: '🏥', label: 'Teams', value: stats?.totalTeams, color: '#805ad5', nav: 'Teams', filter: 'TEAMS' },
+    { icon: '🤝', label: 'Customers', value: stats?.totalCustomers, color: '#38a169', nav: 'Teams', filter: 'CUSTOMERS' },
+    { icon: '🧾', label: 'Invoices', value: stats?.totalInvoices, color: '#d69e2e', nav: 'Finance', filter: 'ALL' },
   ];
-  if (loading) return <Loading color="#c53030" />;
+
+  const handleSeed = async () => {
+    setSeeding(true);
+    try {
+      const res = await fetch(`${API}/api/admin/seed`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const data = await res.json();
+      setSeeding(false);
+      alert('Mock Data Generated!\n' + (data.message || 'Database refreshed. Pull to refresh other tabs!'));
+      onRefresh();
+    } catch (e) {
+      setSeeding(false);
+      alert('Seeding request completed. Pull to refresh!');
+      onRefresh();
+    }
+  };
+
+  if (loading && !stats) return <Loading color="#c53030" />;
+
   return (
-    <ScrollView style={s.screen}>
+    <ScrollView
+      style={s.screen}
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+    >
       <DashHeader title="Admin Overview" subtitle="Florence Nightingales Operations" color1="#7b0000" color2="#c53030" onLogout={onLogout} />
       <View style={s.body}>
-        <Text style={s.sectionTitle}>Key Metrics</Text>
+        <Text style={s.sectionTitle}>Key Metrics (Tap to view details)</Text>
         <View style={s.grid}>
           {statItems.map(item => (
-            <TouchableOpacity key={item.label} style={[s.statCard, { borderTopColor: item.color, borderTopWidth: 3 }]} onPress={() => navigation.navigate(item.nav)}>
+            <TouchableOpacity
+              key={item.label}
+              style={[s.statCard, { borderTopColor: item.color, borderTopWidth: 3 }]}
+              onPress={() => navigation.navigate(item.nav, { filter: item.filter })}
+            >
               <Text style={s.statIcon}>{item.icon}</Text>
               <Text style={[s.statVal, { color: item.color }]}>{item.value ?? '—'}</Text>
               <Text style={s.statLabel}>{item.label}</Text>
@@ -92,8 +121,11 @@ const OverviewTab = ({ token, onLogout, navigation }) => {
           ))}
         </View>
 
-        <Text style={s.sectionTitle}>Financial Summary</Text>
-        <TouchableOpacity style={[s.card, { backgroundColor: '#fff5f5', borderLeftWidth: 4, borderLeftColor: '#c53030' }]} onPress={() => navigation.navigate('Finance')}>
+        <Text style={s.sectionTitle}>Financial Summary (Tap to filter)</Text>
+        <TouchableOpacity
+          style={[s.card, { backgroundColor: '#fff5f5', borderLeftWidth: 4, borderLeftColor: '#c53030' }]}
+          onPress={() => navigation.navigate('Finance', { filter: 'ALL' })}
+        >
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
             <View>
               <Text style={s.muted}>Total Outstanding Balance</Text>
@@ -104,89 +136,214 @@ const OverviewTab = ({ token, onLogout, navigation }) => {
             <Text style={{ fontSize: 40 }}>💰</Text>
           </View>
         </TouchableOpacity>
+
         <View style={{ flexDirection: 'row', gap: 10 }}>
-          <TouchableOpacity style={[s.card, { flex: 1, alignItems: 'center', backgroundColor: '#f0fff4' }]} onPress={() => navigation.navigate('Finance')}>
+          <TouchableOpacity
+            style={[s.card, { flex: 1, alignItems: 'center', backgroundColor: '#f0fff4' }]}
+            onPress={() => navigation.navigate('Finance', { filter: 'PAID' })}
+          >
             <Text style={{ fontSize: 28 }}>✅</Text>
             <Text style={s.muted}>Fully Paid</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={[s.card, { flex: 1, alignItems: 'center', backgroundColor: '#fffff0' }]} onPress={() => navigation.navigate('Finance')}>
+
+          <TouchableOpacity
+            style={[s.card, { flex: 1, alignItems: 'center', backgroundColor: '#fffff0' }]}
+            onPress={() => navigation.navigate('Finance', { filter: 'PENDING' })}
+          >
             <Text style={{ fontSize: 28 }}>⏳</Text>
             <Text style={s.muted}>Pending/Partial</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={[s.card, { flex: 1, alignItems: 'center', backgroundColor: '#fff5f5' }]} onPress={() => navigation.navigate('Finance')}>
+
+          <TouchableOpacity
+            style={[s.card, { flex: 1, alignItems: 'center', backgroundColor: '#fff5f5' }]}
+            onPress={() => navigation.navigate('Finance', { filter: 'OVERDUE' })}
+          >
             <Text style={{ fontSize: 28 }}>🚨</Text>
             <Text style={s.muted}>Overdue</Text>
           </TouchableOpacity>
         </View>
 
-        <TouchableOpacity style={[s.btn, { marginTop: 20, backgroundColor: '#3182ce' }]} onPress={async () => {
-          try {
-            await fetch(`${API}/api/admin/seed`, { headers: { 'Authorization': `Bearer ${token}` } });
-            alert('Mock data seeded! Please pull-to-refresh the Finance and Audit tabs.');
-          } catch(e) {}
-        }}>
-          <Text style={s.btnText}>Add Mock Data</Text>
+        <TouchableOpacity
+          style={[s.btn, { marginTop: 24, backgroundColor: '#c53030' }, seeding && { opacity: 0.6 }]}
+          onPress={handleSeed}
+          disabled={seeding}
+        >
+          <Text style={s.btnText}>{seeding ? '⏳  Seeding Mock Data...' : '🧹  Reset & Seed Fresh Mock Data'}</Text>
         </TouchableOpacity>
       </View>
     </ScrollView>
-
   );
 };
 
-// ── TEAMS ─────────────────────────────────────────────────────────────────────
-const TeamsTab = ({ token, onLogout }) => {
-  const { data, loading, refreshing, onRefresh } = useFetch(`${API}/api/admin/team-leads`, token);
-  const { data: allUsers, loading: usersLoading } = useFetch(`${API}/api/operations/employees`, token);
+// ── TEAMS / DIRECTORY ─────────────────────────────────────────────────────────
+const TeamsTab = ({ token, onLogout, route, navigation }) => {
+  const [activeTab, setActiveTab] = useState(route?.params?.filter || 'PERSONNEL');
 
-  if (loading || usersLoading) return <Loading color="#c53030" />;
+  useEffect(() => {
+    if (route?.params?.filter) {
+      setActiveTab(route.params.filter);
+    }
+  }, [route?.params?.filter]);
+
+  const { data: allUsers, loading: uLoading, refreshing: refU, onRefresh: onRefU } = useFetch(`${API}/api/operations/employees`, token);
+  const { data: teamsData, loading: tLoading, refreshing: refT, onRefresh: onRefT } = useFetch(`${API}/api/admin/teams`, token);
+  const { data: custData, loading: cLoading, refreshing: refC, onRefresh: onRefC } = useFetch(`${API}/api/operations/customers`, token);
+
+  const usersList = Array.isArray(allUsers) ? allUsers : [];
+  const teamsList = Array.isArray(teamsData) ? teamsData : [];
+  const customersList = Array.isArray(custData) ? custData : [];
+
+  const isUsers = activeTab === 'PERSONNEL';
+  const isTeams = activeTab === 'TEAMS';
+  const isCustomers = activeTab === 'CUSTOMERS';
+
+  let currentData = usersList;
+  let emptyMsg = 'No personnel found';
+  if (isTeams) {
+    currentData = teamsList;
+    emptyMsg = 'No teams configured';
+  } else if (isCustomers) {
+    currentData = customersList;
+    emptyMsg = 'No registered customers';
+  }
+
+  const refreshing = isTeams ? refT : isCustomers ? refC : refU;
+  const onRefresh = isTeams ? onRefT : isCustomers ? onRefC : onRefU;
+
   return (
     <FlatList
       style={s.screen}
-      data={Array.isArray(allUsers) ? allUsers : []}
-      keyExtractor={i => i.id}
+      data={currentData}
+      keyExtractor={i => i.id || String(Math.random())}
       ItemSeparatorComponent={SeparatorLine}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
       ListHeaderComponent={() => (
         <>
-          <DashHeader title="Team Directory" subtitle="All users across the organization" color1="#1a365d" onLogout={onLogout} />
+          <DashHeader title="Directory & Operations" subtitle="Personnel, Teams, and Registered Customers" color1="#1a365d" onLogout={onLogout} />
           <View style={s.body}>
-            <Text style={s.sectionTitle}>All Personnel ({Array.isArray(allUsers) ? allUsers.length : 0})</Text>
+            <View style={{ flexDirection: 'row', gap: 6, marginBottom: 8 }}>
+              <TouchableOpacity
+                style={[s.pill, isUsers && s.pillActive]}
+                onPress={() => setActiveTab('PERSONNEL')}
+              >
+                <Text style={[s.pillText, isUsers && s.pillTextActive]}>👥 Personnel ({usersList.length})</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[s.pill, isTeams && s.pillActive]}
+                onPress={() => setActiveTab('TEAMS')}
+              >
+                <Text style={[s.pillText, isTeams && s.pillTextActive]}>🏥 Teams ({teamsList.length})</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[s.pill, isCustomers && s.pillActive]}
+                onPress={() => setActiveTab('CUSTOMERS')}
+              >
+                <Text style={[s.pillText, isCustomers && s.pillTextActive]}>🤝 Customers ({customersList.length})</Text>
+              </TouchableOpacity>
+            </View>
           </View>
         </>
       )}
-      ListEmptyComponent={<Empty msg="No users found" />}
-      renderItem={({ item }) => (
-        <TouchableOpacity style={[s.rowCard]} onPress={() => alert(`Details:\n` + JSON.stringify(item, null, 2).replace(/[\{\}"]/g, ''))}>
-          <View style={[s.avatar, { backgroundColor: item.role === 'ADMIN' ? '#fed7d7' : item.role === 'TEAM_LEAD' ? '#bee3f8' : '#c6f6d5' }]}>
-            <Text style={s.avatarText}>{item.full_name?.charAt(0)}</Text>
-          </View>
-          <View style={{ flex: 1, marginLeft: 12 }}>
-            <Text style={s.name}>{item.full_name}</Text>
-            <Text style={s.muted}>{item.email}</Text>
-            {item.designation && <Text style={s.muted}>🏷️ {item.designation}</Text>}
-          </View>
-          <StatusBadge label={item.role === 'ADMIN' ? 'ADMIN' : item.role === 'TEAM_LEAD' ? 'LEAD' : 'STAFF'} />
-        </TouchableOpacity>
-      )}
+      ListEmptyComponent={<Empty msg={emptyMsg} />}
+      renderItem={({ item }) => {
+        if (isTeams) {
+          return (
+            <TouchableOpacity
+              style={s.rowCard}
+              onPress={() => alert(`Team: ${item.name}\nDescription: ${item.description || 'N/A'}\nLead: ${item.team_lead?.full_name || 'Unassigned'}\nStaff Members: ${item._count?.employees || 0}\nCustomers: ${item._count?.customers || 0}`)}
+            >
+              <View style={[s.avatar, { backgroundColor: '#e9d8fd' }]}>
+                <Text style={s.avatarText}>🏥</Text>
+              </View>
+              <View style={{ flex: 1, marginLeft: 12 }}>
+                <Text style={s.name}>{item.name}</Text>
+                <Text style={s.muted}>{item.description || 'General operations'}</Text>
+                <Text style={[s.muted, { marginTop: 4, fontSize: 11 }]}>
+                  Lead: <Text style={s.bold}>{item.team_lead?.full_name || 'None'}</Text> • Members: <Text style={s.bold}>{item._count?.employees || 0}</Text> • Customers: <Text style={s.bold}>{item._count?.customers || 0}</Text>
+                </Text>
+              </View>
+              <StatusBadge label={item.status || 'ACTIVE'} />
+            </TouchableOpacity>
+          );
+        }
+
+        if (isCustomers) {
+          return (
+            <TouchableOpacity
+              style={s.rowCard}
+              onPress={() => alert(`Customer: ${item.full_name}\nPhone: ${item.phone}\nEmail: ${item.email || 'N/A'}\nService: ${item.service_type || 'Care Support'}\nAddress: ${item.address || 'N/A'}`)}
+            >
+              <View style={[s.avatar, { backgroundColor: '#c6f6d5' }]}>
+                <Text style={s.avatarText}>🤝</Text>
+              </View>
+              <View style={{ flex: 1, marginLeft: 12 }}>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                  <Text style={s.name}>{item.full_name}</Text>
+                  <StatusBadge label={item.status || 'ACTIVE'} />
+                </View>
+                <Text style={s.muted}>📞 {item.phone} • ✉️ {item.email || 'N/A'}</Text>
+                <Text style={[s.muted, { marginTop: 2, fontSize: 11 }]}>Service: {item.service_type || 'Care Support'}</Text>
+                {item.address && <Text style={[s.muted, { fontSize: 11 }]}>📍 {item.address}</Text>}
+              </View>
+            </TouchableOpacity>
+          );
+        }
+
+        // Default: Personnel
+        return (
+          <TouchableOpacity
+            style={[s.rowCard]}
+            onPress={() => alert(`Personnel: ${item.full_name}\nRole: ${item.role}\nEmail: ${item.email}\nPhone: ${item.phone || 'N/A'}\nDesignation: ${item.designation || 'Staff'}\nQualification: ${item.qualification || 'N/A'}`)}
+          >
+            <View style={[s.avatar, { backgroundColor: item.role === 'ADMIN' ? '#fed7d7' : item.role === 'TEAM_LEAD' ? '#bee3f8' : '#c6f6d5' }]}>
+              <Text style={s.avatarText}>{item.full_name?.charAt(0)}</Text>
+            </View>
+            <View style={{ flex: 1, marginLeft: 12 }}>
+              <Text style={s.name}>{item.full_name}</Text>
+              <Text style={s.muted}>{item.email} • {item.phone || 'No phone'}</Text>
+              {item.designation && <Text style={s.muted}>🏷️ {item.designation}</Text>}
+            </View>
+            <StatusBadge label={item.role === 'ADMIN' ? 'ADMIN' : item.role === 'TEAM_LEAD' ? 'LEAD' : 'STAFF'} />
+          </TouchableOpacity>
+        );
+      }}
       contentContainerStyle={{ paddingBottom: 40 }}
     />
   );
 };
 
 // ── FINANCIALS ────────────────────────────────────────────────────────────────
-const FinanceTab = ({ token, onLogout }) => {
+const FinanceTab = ({ token, onLogout, route }) => {
+  const [filterStatus, setFilterStatus] = useState(route?.params?.filter || 'ALL');
+
+  useEffect(() => {
+    if (route?.params?.filter) {
+      setFilterStatus(route.params.filter);
+    }
+  }, [route?.params?.filter]);
+
   const { data, loading, refreshing, onRefresh } = useFetch(`${API}/api/admin/invoices`, token);
-  if (loading) return <Loading color="#c53030" />;
+  if (loading && !data) return <Loading color="#1a3a1a" />;
+
   const invoices = Array.isArray(data) ? data : [];
   const totalBilled = invoices.reduce((a, i) => a + Number(i.total_amount), 0);
   const totalCollected = invoices.reduce((a, i) => a + (i.payments?.filter(p => p.status === 'CONFIRMED').reduce((s, p) => s + Number(p.amount), 0) || 0), 0);
   const outstanding = totalBilled - totalCollected;
 
+  const filteredInvoices = invoices.filter(i => {
+    if (filterStatus === 'PAID') return i.status === 'PAID';
+    if (filterStatus === 'PENDING') return i.status === 'PENDING' || i.status === 'PARTIALLY_PAID';
+    if (filterStatus === 'OVERDUE') return i.status === 'OVERDUE';
+    return true;
+  });
+
   return (
     <FlatList
       style={s.screen}
-      data={invoices}
-      keyExtractor={i => i.id}
+      data={filteredInvoices}
+      keyExtractor={i => i.id || String(Math.random())}
       ItemSeparatorComponent={SeparatorLine}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
       ListHeaderComponent={() => (
@@ -203,17 +360,46 @@ const FinanceTab = ({ token, onLogout }) => {
                 <Text style={[s.money, { color: '#c53030' }]}>₹{outstanding.toLocaleString('en-IN')}</Text>
               </View>
             </View>
-            <Text style={s.sectionTitle}>All Invoices ({invoices.length})</Text>
+
+            <View style={{ flexDirection: 'row', gap: 6, marginBottom: 12 }}>
+              <TouchableOpacity
+                style={[s.pill, filterStatus === 'ALL' && s.pillActive]}
+                onPress={() => setFilterStatus('ALL')}
+              >
+                <Text style={[s.pillText, filterStatus === 'ALL' && s.pillTextActive]}>All ({invoices.length})</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[s.pill, filterStatus === 'PAID' && s.pillActive]}
+                onPress={() => setFilterStatus('PAID')}
+              >
+                <Text style={[s.pillText, filterStatus === 'PAID' && s.pillTextActive]}>Paid</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[s.pill, filterStatus === 'PENDING' && s.pillActive]}
+                onPress={() => setFilterStatus('PENDING')}
+              >
+                <Text style={[s.pillText, filterStatus === 'PENDING' && s.pillTextActive]}>Pending</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[s.pill, filterStatus === 'OVERDUE' && s.pillActive]}
+                onPress={() => setFilterStatus('OVERDUE')}
+              >
+                <Text style={[s.pillText, filterStatus === 'OVERDUE' && s.pillTextActive]}>Overdue</Text>
+              </TouchableOpacity>
+            </View>
           </View>
         </>
       )}
-      ListEmptyComponent={<Empty msg="No invoices found" />}
+      ListEmptyComponent={<Empty msg="No invoices found matching filter" />}
       renderItem={({ item }) => {
         const paid = item.payments?.filter(p => p.status === 'CONFIRMED').reduce((a, p) => a + Number(p.amount), 0) || 0;
-        const outstanding = Number(item.total_amount) - paid;
+        const bal = Number(item.total_amount) - paid;
         const pct = Math.round((paid / Number(item.total_amount)) * 100);
         return (
-          <TouchableOpacity style={s.invoiceCard} onPress={() => alert(`Details:\n` + JSON.stringify(item, null, 2).replace(/[\{\}"]/g, ''))}>
+          <TouchableOpacity
+            style={s.invoiceCard}
+            onPress={() => alert(`Invoice #${item.invoice_number}\nCustomer: ${item.customer?.full_name}\nTotal: ₹${Number(item.total_amount).toLocaleString('en-IN')}\nPaid: ₹${paid.toLocaleString('en-IN')}\nBalance Due: ₹${bal.toLocaleString('en-IN')}\nStatus: ${item.status}\nDue Date: ${new Date(item.due_date).toLocaleDateString('en-IN')}`)}
+          >
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
               <View style={{ flex: 1 }}>
                 <Text style={s.name}>{item.customer?.full_name}</Text>
@@ -227,7 +413,7 @@ const FinanceTab = ({ token, onLogout }) => {
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 8 }}>
               <Text style={s.muted}>Total: <Text style={s.bold}>₹{Number(item.total_amount).toLocaleString('en-IN')}</Text></Text>
               <Text style={s.muted}>Paid: <Text style={[s.bold, { color: '#276749' }]}>₹{paid.toLocaleString('en-IN')}</Text></Text>
-              <Text style={s.muted}>Due: <Text style={[s.bold, { color: '#c53030' }]}>₹{outstanding.toLocaleString('en-IN')}</Text></Text>
+              <Text style={s.muted}>Due: <Text style={[s.bold, { color: '#c53030' }]}>₹{bal.toLocaleString('en-IN')}</Text></Text>
             </View>
             <Text style={[s.muted, { marginTop: 4 }]}>📅 Due: {new Date(item.due_date).toLocaleDateString('en-IN')}</Text>
           </TouchableOpacity>
@@ -241,25 +427,31 @@ const FinanceTab = ({ token, onLogout }) => {
 // ── AUDIT LOGS ────────────────────────────────────────────────────────────────
 const AuditTab = ({ token, onLogout }) => {
   const { data, loading, refreshing, onRefresh } = useFetch(`${API}/api/admin/audit-logs`, token);
-  if (loading) return <Loading color="#c53030" />;
+  if (loading && !data) return <Loading color="#2d2d2d" />;
+
+  const logs = Array.isArray(data) ? data : [];
+
   return (
     <FlatList
       style={s.screen}
-      data={Array.isArray(data) ? data : []}
-      keyExtractor={i => i.id}
+      data={logs}
+      keyExtractor={i => i.id || String(Math.random())}
       ItemSeparatorComponent={SeparatorLine}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
       ListHeaderComponent={() => (
         <>
           <DashHeader title="Security Audit Logs" subtitle="All sensitive system actions recorded" color1="#2d2d2d" onLogout={onLogout} />
-          <View style={s.body}><Text style={s.sectionTitle}>Recent Activity</Text></View>
+          <View style={s.body}><Text style={s.sectionTitle}>Recent Activity ({logs.length})</Text></View>
         </>
       )}
       ListEmptyComponent={<Empty msg="No audit logs yet" />}
       renderItem={({ item }) => {
         const isSuccess = item.result === 'SUCCESS';
         return (
-          <TouchableOpacity style={[s.rowCard, { borderLeftWidth: 3, borderLeftColor: isSuccess ? '#38a169' : '#c53030' }]} onPress={() => alert(`Details:\n` + JSON.stringify(item, null, 2).replace(/[\{\}"]/g, ''))}>
+          <TouchableOpacity
+            style={[s.rowCard, { borderLeftWidth: 3, borderLeftColor: isSuccess ? '#38a169' : '#c53030' }]}
+            onPress={() => alert(`Audit Event: ${item.action}\nEntity: ${item.entity_type} (${item.entity_id || 'N/A'})\nActor: ${item.actor?.full_name || 'System'}\nResult: ${item.result}\nTimestamp: ${new Date(item.timestamp).toLocaleString('en-IN')}`)}
+          >
             <Text style={{ fontSize: 24, marginRight: 12 }}>{isSuccess ? '✅' : '❌'}</Text>
             <View style={{ flex: 1 }}>
               <Text style={s.name}>{item.action.replace(/_/g, ' ')}</Text>
@@ -292,8 +484,8 @@ export default function AdminDashboard({ token, onLogout }) {
       })}
     >
       <Tab.Screen name="Overview">{({ navigation }) => <OverviewTab token={token} onLogout={onLogout} navigation={navigation} />}</Tab.Screen>
-      <Tab.Screen name="Teams">{() => <TeamsTab token={token} onLogout={onLogout} />}</Tab.Screen>
-      <Tab.Screen name="Finance">{() => <FinanceTab token={token} onLogout={onLogout} />}</Tab.Screen>
+      <Tab.Screen name="Teams">{({ route, navigation }) => <TeamsTab token={token} onLogout={onLogout} route={route} navigation={navigation} />}</Tab.Screen>
+      <Tab.Screen name="Finance">{({ route, navigation }) => <FinanceTab token={token} onLogout={onLogout} route={route} navigation={navigation} />}</Tab.Screen>
       <Tab.Screen name="Audit" options={{ title: 'Audit' }}>{() => <AuditTab token={token} onLogout={onLogout} />}</Tab.Screen>
     </Tab.Navigator>
   );
@@ -326,4 +518,10 @@ const s = StyleSheet.create({
   emptyWrap: { padding: 40, alignItems: 'center' },
   emptyIcon: { fontSize: 48, marginBottom: 12 },
   emptyText: { color: '#718096', textAlign: 'center' },
+  btn: { backgroundColor: '#c53030', borderRadius: 12, padding: 14, alignItems: 'center' },
+  btnText: { color: '#fff', fontWeight: '800', fontSize: 14 },
+  pill: { paddingHorizontal: 12, paddingVertical: 8, borderRadius: 20, backgroundColor: '#edf2f7' },
+  pillActive: { backgroundColor: '#1a365d' },
+  pillText: { fontSize: 12, fontWeight: '700', color: '#4a5568' },
+  pillTextActive: { color: '#ffffff' },
 });

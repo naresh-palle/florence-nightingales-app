@@ -20,21 +20,25 @@ app.get('/health', (req, res) => {
   res.json({ status: 'OK', message: 'Florence Nightingales API is running securely.' });
 });
 
-import { exec } from 'child_process';
+import { runCompleteSeed } from './services/seeder.service';
+import { PrismaClient } from '@prisma/client';
 
+const prisma = new PrismaClient();
 const PORT = Number(process.env.PORT) || 3000;
 
-app.listen(PORT, '0.0.0.0', () => {
+app.listen(PORT, '0.0.0.0', async () => {
   console.log(`[Server] Secure Backend API running on port ${PORT}`);
   
-  // Auto-seed for the user asynchronously
-  console.log('Automatically seeding mock users...');
-  exec('npx ts-node prisma/seed.ts', (seedErr, seedOut, seedStdErr) => {
-    if (seedErr) {
-      console.error('❌ Failed to seed database:', seedErr, seedStdErr);
-      return;
+  try {
+    const invCount = await prisma.invoice.count();
+    if (invCount === 0) {
+      console.log('Detected 0 invoices. Seeding initial rich production data...');
+      await runCompleteSeed(false);
+      console.log('✅ Initial database seed finished successfully!');
+    } else {
+      console.log(`✅ Database already has ${invCount} invoices.`);
     }
-    console.log(seedOut);
-    console.log('✅ Database is fully ready to use!');
-  });
+  } catch (err) {
+    console.warn('Startup check/seed note:', err);
+  }
 });

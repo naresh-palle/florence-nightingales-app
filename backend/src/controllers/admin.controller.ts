@@ -70,24 +70,29 @@ export const getAllInvoices = async (req: Request, res: Response) => {
   }
 };
 
-export const seedMockData = async (req: Request, res: Response) => {
+export const getTeams = async (req: Request, res: Response) => {
   try {
-    const team = await prisma.team.findFirst() || await prisma.team.create({ data: { name: 'Mock Team' } });
-    const cust = await prisma.customer.findFirst() || await prisma.customer.create({ data: { full_name: 'Mock Customer', phone: '123', email: 'c@m.com', address: '123 Main', team_id: team.id }});
-    await prisma.invoice.createMany({
-      data: [
-        { customer_id: cust.id, invoice_number: 'INV-' + Date.now(), total_amount: 15000, status: 'PENDING', due_date: new Date(Date.now() + 86400000), service_period_start: new Date(), service_period_end: new Date(), billing_date: new Date() },
-        { customer_id: cust.id, invoice_number: 'INV-' + (Date.now()+1), total_amount: 25000, status: 'PAID', due_date: new Date(Date.now() - 86400000), service_period_start: new Date(), service_period_end: new Date(), billing_date: new Date() }
-      ]
+    const teams = await prisma.team.findMany({
+      include: {
+        team_lead: { select: { id: true, full_name: true, email: true, phone: true } },
+        _count: { select: { employees: true, customers: true } }
+      },
+      orderBy: { name: 'asc' }
     });
-    await prisma.auditLog.createMany({
-      data: [
-        { action: 'LOGIN', entity_type: 'SYSTEM', entity_id: 'sys', actor_user_id: req.user?.id, result: 'SUCCESS' },
-        { action: 'CREATE_INVOICE', entity_type: 'INVOICE', entity_id: 'inv1', actor_user_id: req.user?.id, result: 'SUCCESS' }
-      ]
-    });
-    res.json({ message: 'Mock data seeded successfully! Please refresh the app.' });
+    res.json(teams);
   } catch (error) {
-    res.status(500).json({ error: 'Failed to seed data', details: error });
+    res.status(500).json({ error: 'Failed to fetch teams' });
   }
 };
+
+export const seedMockData = async (req: Request, res: Response) => {
+  try {
+    const { runCompleteSeed } = await import('../services/seeder.service');
+    const stats = await runCompleteSeed(true);
+    res.json({ message: 'Old mock data cleared and fresh production mock data seeded successfully!', stats });
+  } catch (error: any) {
+    console.error('Seed error:', error);
+    res.status(500).json({ error: 'Failed to seed data', details: error?.message || error });
+  }
+};
+
