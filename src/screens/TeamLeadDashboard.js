@@ -40,25 +40,25 @@ const Loading = () => <View style={s.center}><ActivityIndicator size="large" col
 const Empty = ({ msg }) => <View style={s.emptyWrap}><Text style={{ fontSize: 48 }}>📭</Text><Text style={s.emptyText}>{msg || 'No records found'}</Text></View>;
 const Divider = () => <View style={{ height: 1, backgroundColor: '#edf2f7', marginHorizontal: 16 }} />;
 
-// ── CUSTOMERS ─────────────────────────────────────────────────────────────────
-const CustomersTab = ({ token }) => {
-  const { data, loading, refreshing, onRefresh } = useFetch(`${API}/api/operations/customers`, token);
+// ── PATIENTS ─────────────────────────────────────────────────────────────────
+const PatientsTab = ({ token }) => {
+  const { data, loading, refreshing, onRefresh } = useFetch(`${API}/api/operations/patients`, token);
   if (loading) return <Loading />;
-  const customers = Array.isArray(data) ? data : [];
+  const patients = Array.isArray(data) ? data : [];
   return (
     <FlatList
       style={s.screen}
-      data={customers}
+      data={patients}
       keyExtractor={i => i.id}
       ItemSeparatorComponent={Divider}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
       ListHeaderComponent={() => (
         <>
-          <DashHeader title="My Customers" subtitle={`${customers.length} active patients`} />
+          <DashHeader title="My Patients" subtitle={`${patients.length} active patients under care`} />
           <View style={s.body}><Text style={s.sectionTitle}>Patient Roster</Text></View>
         </>
       )}
-      ListEmptyComponent={<Empty msg="No customers in your team" />}
+      ListEmptyComponent={<Empty msg="No patients assigned to your team" />}
       renderItem={({ item }) => (
         <View style={s.rowCard}>
           <View style={[s.avatar, { backgroundColor: '#bee3f8' }]}>
@@ -66,11 +66,46 @@ const CustomersTab = ({ token }) => {
           </View>
           <View style={{ flex: 1, marginLeft: 12 }}>
             <Text style={s.name}>{item.full_name}</Text>
-            <Text style={s.muted}>📞 {item.phone}</Text>
-            {item.service_type && <Text style={s.muted}>🏥 {item.service_type}</Text>}
+            <Text style={s.muted}>🏥 {item.patient_number}</Text>
+            <Text style={s.muted}>📞 {item.customer?.phone || 'No phone'}</Text>
             {item.address && <Text style={s.muted} numberOfLines={1}>📍 {item.address}</Text>}
+            {item.care_requirements && <Text style={[s.muted, {color:'#c53030', marginTop:4}]} numberOfLines={2}>⚠️ {item.care_requirements}</Text>}
           </View>
-          <StatusBadge label={item.status} />
+        </View>
+      )}
+      contentContainerStyle={{ paddingBottom: 40 }}
+    />
+  );
+};
+
+// ── ENQUIRIES ─────────────────────────────────────────────────────────────────
+const EnquiriesTab = ({ token }) => {
+  const { data, loading, refreshing, onRefresh } = useFetch(`${API}/api/operations/enquiries`, token);
+  if (loading) return <Loading />;
+  const enquiries = Array.isArray(data) ? data : [];
+  return (
+    <FlatList
+      style={s.screen}
+      data={enquiries}
+      keyExtractor={i => i.id}
+      ItemSeparatorComponent={Divider}
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+      ListHeaderComponent={() => (
+        <>
+          <DashHeader title="Lead Pipeline" subtitle={`${enquiries.length} new enquiries`} />
+          <View style={s.body}><Text style={s.sectionTitle}>Sales & Enquiries</Text></View>
+        </>
+      )}
+      ListEmptyComponent={<Empty msg="No pending enquiries" />}
+      renderItem={({ item }) => (
+        <View style={s.rowCard}>
+          <Text style={{ fontSize: 24, marginRight: 12 }}>📋</Text>
+          <View style={{ flex: 1 }}>
+            <Text style={s.name}>{item.customer_name}</Text>
+            <Text style={s.muted}>📞 {item.phone}</Text>
+            {item.service_required && <Text style={s.muted}>💼 {item.service_required}</Text>}
+            <View style={{ marginTop: 6 }}><StatusBadge label={item.status} /></View>
+          </View>
         </View>
       )}
       contentContainerStyle={{ paddingBottom: 40 }}
@@ -139,11 +174,11 @@ const AssignmentsTab = ({ token }) => {
         <View style={[s.rowCard, { alignItems: 'flex-start' }]}>
           <Text style={{ fontSize: 28, marginRight: 12 }}>🏥</Text>
           <View style={{ flex: 1 }}>
-            <Text style={s.name}>{item.customer?.full_name}</Text>
+            <Text style={s.name}>{item.patient?.full_name || item.customer?.full_name}</Text>
             <Text style={s.muted}>👤 {item.employee?.full_name || 'Unassigned'}</Text>
             <Text style={s.muted}>🏷️ {item.service_type}</Text>
             {item.start_time && <Text style={s.muted}>🕐 {item.start_time} – {item.end_time || 'Open'}</Text>}
-            {item.notes && <Text style={[s.muted, { marginTop: 4, fontStyle: 'italic' }]} numberOfLines={2}>{item.notes}</Text>}
+            {item.patient?.care_requirements && <Text style={[s.muted, { marginTop: 4, fontStyle: 'italic', color: '#c53030' }]} numberOfLines={2}>⚠️ {item.patient.care_requirements}</Text>}
             <View style={{ marginTop: 6 }}><StatusBadge label={item.status} /></View>
           </View>
         </View>
@@ -227,12 +262,13 @@ export default function TeamLeadDashboard({ token }) {
         tabBarStyle: { borderTopWidth: 0, elevation: 10, shadowOpacity: 0.1 },
         tabBarLabelStyle: { fontSize: 11, fontWeight: '600' },
         tabBarIcon: ({ color }) => {
-          const icons = { Customers: '🤝', Staff: '👥', Assignments: '📋', Payments: '💳' };
+          const icons = { Enquiries: '🛎️', Patients: '🤝', Staff: '👥', Assignments: '📋', Payments: '💳' };
           return <Text style={{ fontSize: 20, color }}>{icons[route.name]}</Text>;
         }
       })}
     >
-      <Tab.Screen name="Customers">{() => <CustomersTab token={token} />}</Tab.Screen>
+      <Tab.Screen name="Enquiries">{() => <EnquiriesTab token={token} />}</Tab.Screen>
+      <Tab.Screen name="Patients">{() => <PatientsTab token={token} />}</Tab.Screen>
       <Tab.Screen name="Staff">{() => <StaffTab token={token} />}</Tab.Screen>
       <Tab.Screen name="Assignments">{() => <AssignmentsTab token={token} />}</Tab.Screen>
       <Tab.Screen name="Payments">{() => <PaymentsTab token={token} />}</Tab.Screen>

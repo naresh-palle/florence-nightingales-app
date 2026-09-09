@@ -67,10 +67,11 @@ const AssignmentsTab = ({ token }) => {
             <Text style={s.timeText}>{item.end_time || '--'}</Text>
           </View>
           <View style={{ flex: 1, marginLeft: 12 }}>
-            <Text style={s.name}>{item.customer?.full_name}</Text>
+            <Text style={s.name}>{item.patient?.full_name || item.customer?.full_name}</Text>
             <Text style={s.muted}>📍 {item.customer?.address || 'Address not set'}</Text>
             <Text style={s.muted}>📞 {item.customer?.phone}</Text>
             <Text style={s.muted}>🏥 {item.service_type}</Text>
+            {item.patient?.care_requirements && <Text style={[s.muted, { marginTop: 4, fontStyle: 'italic', color: '#c53030' }]} numberOfLines={2}>⚠️ {item.patient.care_requirements}</Text>}
             {item.notes && <Text style={[s.muted, { marginTop: 4, fontStyle: 'italic', color: '#4a5568' }]} numberOfLines={2}>{item.notes}</Text>}
             <View style={{ marginTop: 6 }}><StatusBadge label={item.status} /></View>
           </View>
