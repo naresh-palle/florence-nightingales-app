@@ -3,7 +3,7 @@ import { authenticate } from '../middleware/auth';
 import { requireRole } from '../middleware/rbac';
 import { createEmployee, getEmployees, deactivateEmployee } from '../controllers/employee.controller';
 import { createCustomer, getCustomers, getCustomerDetail } from '../controllers/customer.controller';
-import { getAssignments, createAssignment, getTasks, getAttendance, getTeamInvoices, getPatients, getEnquiries } from '../controllers/operations.controller';
+import { getAssignments, createAssignment, getTasks, getAttendance, getTeamInvoices, getPatients, getEnquiries, getCatalog, createQuotation, getQuotations } from '../controllers/operations.controller';
 import { Role } from '@prisma/client';
 
 const router = Router();
@@ -22,6 +22,11 @@ router.get('/customers/:id', requireRole([Role.ADMIN, Role.TEAM_LEAD]), getCusto
 // Patient & Enquiry Routes
 router.get('/patients', requireRole([Role.ADMIN, Role.TEAM_LEAD]), getPatients);
 router.get('/enquiries', requireRole([Role.ADMIN, Role.TEAM_LEAD]), getEnquiries);
+
+// Service Catalog & Quotations
+router.get('/catalog', requireRole([Role.ADMIN, Role.TEAM_LEAD]), getCatalog);
+router.post('/quotations', requireRole([Role.ADMIN, Role.TEAM_LEAD]), createQuotation);
+router.get('/quotations', requireRole([Role.ADMIN, Role.TEAM_LEAD]), getQuotations);
 
 // Assignment Routes (All roles, scoped by role)
 router.post('/assignments', requireRole([Role.ADMIN, Role.TEAM_LEAD]), createAssignment);

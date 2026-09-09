@@ -252,6 +252,51 @@ const PaymentsTab = ({ token }) => {
   );
 };
 
+// ── QUOTES ────────────────────────────────────────────────────────────────────
+const QuotesTab = ({ token }) => {
+  const { data, loading, refreshing, onRefresh } = useFetch(`${API}/api/operations/quotations`, token);
+  if (loading) return <Loading />;
+  const quotes = Array.isArray(data) ? data : [];
+  return (
+    <FlatList
+      style={s.screen}
+      data={quotes}
+      keyExtractor={i => i.id}
+      ItemSeparatorComponent={Divider}
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+      ListHeaderComponent={() => (
+        <>
+          <DashHeader title="Quotations" subtitle="Price quotes sent to leads" />
+          <View style={s.body}><Text style={s.sectionTitle}>Active Quotes</Text></View>
+        </>
+      )}
+      ListEmptyComponent={<Empty msg="No quotations generated yet" />}
+      renderItem={({ item }) => (
+        <View style={s.invoiceCard}>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+            <Text style={s.name}>{item.enquiry?.customer_name}</Text>
+            <StatusBadge label={item.status} />
+          </View>
+          <Text style={s.muted}>#{item.quotation_number}</Text>
+          <Text style={[s.bigMoney, { color: '#2b6cb0', marginTop: 8 }]}>₹{Number(item.total_amount).toLocaleString('en-IN')}</Text>
+          {item.valid_until && <Text style={[s.muted, { marginTop: 4, color: new Date(item.valid_until) < new Date() ? '#c53030' : '#718096' }]}>Valid until: {new Date(item.valid_until).toLocaleDateString('en-IN')}</Text>}
+          
+          <View style={{ marginTop: 12, backgroundColor: '#f7fafc', padding: 8, borderRadius: 8 }}>
+            <Text style={[s.muted, { fontWeight: '700', marginBottom: 4 }]}>Items:</Text>
+            {item.items?.map(qi => (
+              <View key={qi.id} style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 2 }}>
+                <Text style={s.muted}>{qi.quantity}x {qi.service?.name}</Text>
+                <Text style={s.muted}>₹{Number(qi.total_price).toLocaleString('en-IN')}</Text>
+              </View>
+            ))}
+          </View>
+        </View>
+      )}
+      contentContainerStyle={{ paddingBottom: 40 }}
+    />
+  );
+};
+
 export default function TeamLeadDashboard({ token }) {
   return (
     <Tab.Navigator
@@ -262,14 +307,14 @@ export default function TeamLeadDashboard({ token }) {
         tabBarStyle: { borderTopWidth: 0, elevation: 10, shadowOpacity: 0.1 },
         tabBarLabelStyle: { fontSize: 11, fontWeight: '600' },
         tabBarIcon: ({ color }) => {
-          const icons = { Enquiries: '🛎️', Patients: '🤝', Staff: '👥', Assignments: '📋', Payments: '💳' };
+          const icons = { Enquiries: '🛎️', Quotes: '📄', Patients: '🤝', Assignments: '📋', Payments: '💳' };
           return <Text style={{ fontSize: 20, color }}>{icons[route.name]}</Text>;
         }
       })}
     >
       <Tab.Screen name="Enquiries">{() => <EnquiriesTab token={token} />}</Tab.Screen>
+      <Tab.Screen name="Quotes">{() => <QuotesTab token={token} />}</Tab.Screen>
       <Tab.Screen name="Patients">{() => <PatientsTab token={token} />}</Tab.Screen>
-      <Tab.Screen name="Staff">{() => <StaffTab token={token} />}</Tab.Screen>
       <Tab.Screen name="Assignments">{() => <AssignmentsTab token={token} />}</Tab.Screen>
       <Tab.Screen name="Payments">{() => <PaymentsTab token={token} />}</Tab.Screen>
     </Tab.Navigator>

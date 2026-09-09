@@ -227,6 +227,50 @@ const ProfileTab = ({ token }) => {
             <Text style={{ fontWeight: '700', color: '#2d3748', maxWidth: '55%', textAlign: 'right' }}>{f.value}</Text>
           </View>
         ))}
+
+        {profile?.documents?.length > 0 && (
+          <>
+            <Text style={[s.sectionTitle, { marginTop: 16 }]}>Documents</Text>
+            {profile.documents.map(d => (
+              <View key={d.id} style={[s.card, { paddingVertical: 14 }]}>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <Text style={{ fontWeight: '700', color: '#2d3748' }}>📄 {d.document_type}</Text>
+                  <StatusBadge label={d.is_verified ? 'COMPLETED' : 'PENDING'} />
+                </View>
+                {d.expiry_date && <Text style={[s.muted, { marginTop: 4 }]}>Expires: {new Date(d.expiry_date).toLocaleDateString('en-IN')}</Text>}
+              </View>
+            ))}
+          </>
+        )}
+
+        {profile?.certifications?.length > 0 && (
+          <>
+            <Text style={[s.sectionTitle, { marginTop: 16 }]}>Certifications</Text>
+            {profile.certifications.map(c => (
+              <View key={c.id} style={[s.card, { paddingVertical: 14 }]}>
+                <Text style={{ fontWeight: '700', color: '#2d3748' }}>🎓 {c.name}</Text>
+                <Text style={[s.muted, { marginTop: 4 }]}>{c.issuing_authority}</Text>
+                {c.expiry_date && <Text style={[s.muted, { color: '#c53030' }]}>Expires: {new Date(c.expiry_date).toLocaleDateString('en-IN')}</Text>}
+              </View>
+            ))}
+          </>
+        )}
+
+        {profile?.leave_requests?.length > 0 && (
+          <>
+            <Text style={[s.sectionTitle, { marginTop: 16 }]}>Recent Leave Requests</Text>
+            {profile.leave_requests.map(l => (
+              <View key={l.id} style={[s.card, { paddingVertical: 14 }]}>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <Text style={{ fontWeight: '700', color: '#2d3748' }}>🏖️ {l.leave_type}</Text>
+                  <StatusBadge label={l.status} />
+                </View>
+                <Text style={[s.muted, { marginTop: 4 }]}>From: {new Date(l.start_date).toLocaleDateString('en-IN')} - To: {new Date(l.end_date).toLocaleDateString('en-IN')}</Text>
+                <Text style={[s.muted, { marginTop: 4, fontStyle: 'italic' }]}>"{l.reason}"</Text>
+              </View>
+            ))}
+          </>
+        )}
       </View>
     </ScrollView>
   );

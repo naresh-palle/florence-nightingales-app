@@ -274,6 +274,54 @@ async function main() {
   }
   console.log('✅ HR data created');
 
+  // ── Service Catalog & Quoting ──────────────────────────────────────────────
+  const catExists = await prisma.serviceCategory.findFirst();
+  let nursingCatId, physioCatId, serviceId1, serviceId2;
+
+  if (!catExists) {
+    const nursingCat = await prisma.serviceCategory.create({ data: { name: 'Nursing Services', description: 'Professional nursing care' } });
+    const physioCat = await prisma.serviceCategory.create({ data: { name: 'Physiotherapy', description: 'Physical rehabilitation' } });
+    nursingCatId = nursingCat.id;
+    physioCatId = physioCat.id;
+    
+    await prisma.serviceCatalog.createMany({
+      data: [
+        { name: '12-Hour Critical Care Nursing', base_price: 1500, billing_unit: 'PER_SHIFT', category_id: nursingCat.id },
+        { name: '24-Hour Elderly Care', base_price: 2500, billing_unit: 'PER_SHIFT', category_id: nursingCat.id },
+        { name: 'Post-Surgery Rehab Session', base_price: 800, billing_unit: 'PER_SESSION', category_id: physioCat.id }
+      ]
+    });
+    console.log('✅ Service Catalog created');
+  } else {
+    nursingCatId = (await prisma.serviceCategory.findFirst({ where: { name: 'Nursing Services' } }))?.id;
+  }
+
+  const srv1 = await prisma.serviceCatalog.findFirst({ where: { name: '12-Hour Critical Care Nursing' } });
+  
+  if (srv1) {
+    const enq = await prisma.enquiry.findFirst({ where: { customer_name: 'Rahul Sharma' } });
+    if (enq) {
+      const qExists = await prisma.quotation.findUnique({ where: { enquiry_id: enq.id } });
+      if (!qExists) {
+        await prisma.quotation.create({
+          data: {
+            quotation_number: 'QT-2026-001',
+            total_amount: 45000,
+            status: 'SENT',
+            valid_until: new Date('2026-09-30'),
+            enquiry_id: enq.id,
+            items: {
+              create: [
+                { quantity: 30, unit_price: 1500, total_price: 45000, service_id: srv1.id }
+              ]
+            }
+          }
+        });
+        console.log('✅ Quotation created');
+      }
+    }
+  }
+
   // ── Audit Logs ─────────────────────────────────────────────────────────────
   const auditEvents = [
     { action: 'LOGIN', entity_type: 'USER', entity_id: admin.id, actor_user_id: admin.id, result: 'SUCCESS' },
