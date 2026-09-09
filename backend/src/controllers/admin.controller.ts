@@ -69,3 +69,24 @@ export const getAllInvoices = async (req: Request, res: Response) => {
     res.status(500).json({ error: 'Failed to fetch invoices' });
   }
 };
+
+export const seedMockData = async (req: Request, res: Response) => {
+  try {
+    const cust = await prisma.customer.findFirst() || await prisma.customer.create({ data: { full_name: 'Mock Customer', phone: '123', email: 'c@m.com', address: '123 Main' }});
+    await prisma.invoice.createMany({
+      data: [
+        { customer_id: cust.id, invoice_number: 'INV-' + Date.now(), total_amount: 15000, status: 'PENDING', due_date: new Date(Date.now() + 86400000) },
+        { customer_id: cust.id, invoice_number: 'INV-' + (Date.now()+1), total_amount: 25000, status: 'PAID', due_date: new Date(Date.now() - 86400000) }
+      ]
+    });
+    await prisma.auditLog.createMany({
+      data: [
+        { action: 'LOGIN', entity_type: 'SYSTEM', entity_id: 'sys', actor_user_id: req.user?.id, result: 'SUCCESS' },
+        { action: 'CREATE_INVOICE', entity_type: 'INVOICE', entity_id: 'inv1', actor_user_id: req.user?.id, result: 'SUCCESS' }
+      ]
+    });
+    res.json({ message: 'Mock data seeded successfully! Please refresh the app.' });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to seed data', details: error });
+  }
+};

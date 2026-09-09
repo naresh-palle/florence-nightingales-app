@@ -80,7 +80,7 @@ const ShiftsTab = ({ token, onLogout }) => {
       )}
       ListEmptyComponent={<Empty msg="No shifts scheduled for you right now" />}
       renderItem={({ item }) => (
-        <TouchableOpacity style={[s.rowCard, { alignItems: "flex-start" }]} onPress={() => alert("Detailed view coming soon")}>
+        <TouchableOpacity style={[s.rowCard, { alignItems: "flex-start" }]} onPress={() => alert(`Details:\n` + JSON.stringify(item, null, 2).replace(/[\{\}"]/g, ''))}>
           <View style={[s.timeBox]}>
             <Text style={s.timeText}>{item.start_time || '--'}</Text>
             <Text style={s.timeSep}>│</Text>
@@ -208,7 +208,7 @@ const HelpdeskTab = ({ token, onLogout }) => {
       renderItem={({ item }) => {
         const severityConfig = { CRITICAL: '🔴', HIGH: '🟠', MEDIUM: '🟡', LOW: '🟢' };
         return (
-          <TouchableOpacity style={[s.rowCard, { alignItems: "flex-start" }]} onPress={() => alert("Detailed view coming soon")}>
+          <TouchableOpacity style={[s.rowCard, { alignItems: "flex-start" }]} onPress={() => alert(`Details:\n` + JSON.stringify(item, null, 2).replace(/[\{\}"]/g, ''))}>
             <Text style={{ fontSize: 24, marginRight: 12 }}>{severityConfig[item.severity] || '⚪'}</Text>
             <View style={{ flex: 1 }}>
               <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
@@ -260,7 +260,7 @@ const AttendanceTab = ({ token, onLogout }) => {
         const checkOut = item.check_out ? new Date(item.check_out).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }) : '—';
         const hours = item.check_in && item.check_out ? Math.round((new Date(item.check_out) - new Date(item.check_in)) / 3600000 * 10) / 10 : null;
         return (
-          <TouchableOpacity style={s.rowCard} onPress={() => alert("Detailed view coming soon")}>
+          <TouchableOpacity style={s.rowCard} onPress={() => alert(`Details:\n` + JSON.stringify(item, null, 2).replace(/[\{\}"]/g, ''))}>
             <View style={[s.avatar, { backgroundColor: '#c6f6d5' }]}>
               <Text style={s.avatarText}>✅</Text>
             </View>

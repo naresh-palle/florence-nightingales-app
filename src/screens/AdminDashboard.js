@@ -68,13 +68,13 @@ const StatusBadge = ({ label }) => {
 const SeparatorLine = () => <View style={{ height: 1, backgroundColor: '#edf2f7', marginHorizontal: 16 }} />;
 
 // ── OVERVIEW ──────────────────────────────────────────────────────────────────
-const OverviewTab = ({ token, onLogout }) => {
+const OverviewTab = ({ token, onLogout, navigation }) => {
   const { data: stats, loading } = useFetch(`${API}/api/admin/stats`, token);
   const statItems = [
-    { icon: '👥', label: 'Active Users', value: stats?.totalUsers, color: '#3182ce' },
-    { icon: '🏥', label: 'Teams', value: stats?.totalTeams, color: '#805ad5' },
-    { icon: '🤝', label: 'Customers', value: stats?.totalCustomers, color: '#38a169' },
-    { icon: '🧾', label: 'Invoices', value: stats?.totalInvoices, color: '#d69e2e' },
+    { icon: '👥', label: 'Active Users', value: stats?.totalUsers, color: '#3182ce', nav: 'Teams' },
+    { icon: '🏥', label: 'Teams', value: stats?.totalTeams, color: '#805ad5', nav: 'Teams' },
+    { icon: '🤝', label: 'Customers', value: stats?.totalCustomers, color: '#38a169', nav: 'Teams' },
+    { icon: '🧾', label: 'Invoices', value: stats?.totalInvoices, color: '#d69e2e', nav: 'Finance' },
   ];
   if (loading) return <Loading color="#c53030" />;
   return (
@@ -84,16 +84,16 @@ const OverviewTab = ({ token, onLogout }) => {
         <Text style={s.sectionTitle}>Key Metrics</Text>
         <View style={s.grid}>
           {statItems.map(item => (
-            <View key={item.label} style={[s.statCard, { borderTopColor: item.color, borderTopWidth: 3 }]}>
+            <TouchableOpacity key={item.label} style={[s.statCard, { borderTopColor: item.color, borderTopWidth: 3 }]} onPress={() => navigation.navigate(item.nav)}>
               <Text style={s.statIcon}>{item.icon}</Text>
               <Text style={[s.statVal, { color: item.color }]}>{item.value ?? '—'}</Text>
               <Text style={s.statLabel}>{item.label}</Text>
-            </View>
+            </TouchableOpacity>
           ))}
         </View>
 
         <Text style={s.sectionTitle}>Financial Summary</Text>
-        <View style={[s.card, { backgroundColor: '#fff5f5', borderLeftWidth: 4, borderLeftColor: '#c53030' }]}>
+        <TouchableOpacity style={[s.card, { backgroundColor: '#fff5f5', borderLeftWidth: 4, borderLeftColor: '#c53030' }]} onPress={() => navigation.navigate('Finance')}>
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
             <View>
               <Text style={s.muted}>Total Outstanding Balance</Text>
@@ -103,23 +103,33 @@ const OverviewTab = ({ token, onLogout }) => {
             </View>
             <Text style={{ fontSize: 40 }}>💰</Text>
           </View>
-        </View>
+        </TouchableOpacity>
         <View style={{ flexDirection: 'row', gap: 10 }}>
-          <View style={[s.card, { flex: 1, alignItems: 'center', backgroundColor: '#f0fff4' }]}>
+          <TouchableOpacity style={[s.card, { flex: 1, alignItems: 'center', backgroundColor: '#f0fff4' }]} onPress={() => navigation.navigate('Finance')}>
             <Text style={{ fontSize: 28 }}>✅</Text>
             <Text style={s.muted}>Fully Paid</Text>
           </View>
-          <View style={[s.card, { flex: 1, alignItems: 'center', backgroundColor: '#fffff0' }]}>
+          <TouchableOpacity style={[s.card, { flex: 1, alignItems: 'center', backgroundColor: '#fffff0' }]} onPress={() => navigation.navigate('Finance')}>
             <Text style={{ fontSize: 28 }}>⏳</Text>
             <Text style={s.muted}>Pending/Partial</Text>
           </View>
-          <View style={[s.card, { flex: 1, alignItems: 'center', backgroundColor: '#fff5f5' }]}>
+          <TouchableOpacity style={[s.card, { flex: 1, alignItems: 'center', backgroundColor: '#fff5f5' }]} onPress={() => navigation.navigate('Finance')}>
             <Text style={{ fontSize: 28 }}>🚨</Text>
             <Text style={s.muted}>Overdue</Text>
-          </View>
+          </TouchableOpacity>
         </View>
+
+        <TouchableOpacity style={[s.btn, { marginTop: 20, backgroundColor: '#3182ce' }]} onPress={async () => {
+          try {
+            await fetch(`${API}/api/admin/seed`, { headers: { 'Authorization': `Bearer ${token}` } });
+            alert('Mock data seeded! Please pull-to-refresh the Finance and Audit tabs.');
+          } catch(e) {}
+        }}>
+          <Text style={s.btnText}>Add Mock Data</Text>
+        </TouchableOpacity>
       </View>
     </ScrollView>
+
   );
 };
 
@@ -146,7 +156,7 @@ const TeamsTab = ({ token, onLogout }) => {
       )}
       ListEmptyComponent={<Empty msg="No users found" />}
       renderItem={({ item }) => (
-        <TouchableOpacity style={[s.rowCard]} onPress={() => alert("Detailed view coming soon")}>
+        <TouchableOpacity style={[s.rowCard]} onPress={() => alert(`Details:\n` + JSON.stringify(item, null, 2).replace(/[\{\}"]/g, ''))}>
           <View style={[s.avatar, { backgroundColor: item.role === 'ADMIN' ? '#fed7d7' : item.role === 'TEAM_LEAD' ? '#bee3f8' : '#c6f6d5' }]}>
             <Text style={s.avatarText}>{item.full_name?.charAt(0)}</Text>
           </View>
@@ -203,7 +213,7 @@ const FinanceTab = ({ token, onLogout }) => {
         const outstanding = Number(item.total_amount) - paid;
         const pct = Math.round((paid / Number(item.total_amount)) * 100);
         return (
-          <TouchableOpacity style={s.invoiceCard} onPress={() => alert("Detailed view coming soon")}>
+          <TouchableOpacity style={s.invoiceCard} onPress={() => alert(`Details:\n` + JSON.stringify(item, null, 2).replace(/[\{\}"]/g, ''))}>
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
               <View style={{ flex: 1 }}>
                 <Text style={s.name}>{item.customer?.full_name}</Text>
@@ -249,7 +259,7 @@ const AuditTab = ({ token, onLogout }) => {
       renderItem={({ item }) => {
         const isSuccess = item.result === 'SUCCESS';
         return (
-          <TouchableOpacity style={[s.rowCard, { borderLeftWidth: 3, borderLeftColor: isSuccess ? '#38a169' : '#c53030' }]} onPress={() => alert("Detailed view coming soon")}>
+          <TouchableOpacity style={[s.rowCard, { borderLeftWidth: 3, borderLeftColor: isSuccess ? '#38a169' : '#c53030' }]} onPress={() => alert(`Details:\n` + JSON.stringify(item, null, 2).replace(/[\{\}"]/g, ''))}>
             <Text style={{ fontSize: 24, marginRight: 12 }}>{isSuccess ? '✅' : '❌'}</Text>
             <View style={{ flex: 1 }}>
               <Text style={s.name}>{item.action.replace(/_/g, ' ')}</Text>
@@ -281,7 +291,7 @@ export default function AdminDashboard({ token, onLogout }) {
         }
       })}
     >
-      <Tab.Screen name="Overview">{() => <OverviewTab token={token} onLogout={onLogout} />}</Tab.Screen>
+      <Tab.Screen name="Overview">{({ navigation }) => <OverviewTab token={token} onLogout={onLogout} navigation={navigation} />}</Tab.Screen>
       <Tab.Screen name="Teams">{() => <TeamsTab token={token} onLogout={onLogout} />}</Tab.Screen>
       <Tab.Screen name="Finance">{() => <FinanceTab token={token} onLogout={onLogout} />}</Tab.Screen>
       <Tab.Screen name="Audit" options={{ title: 'Audit' }}>{() => <AuditTab token={token} onLogout={onLogout} />}</Tab.Screen>

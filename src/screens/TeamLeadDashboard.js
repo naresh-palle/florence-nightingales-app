@@ -67,7 +67,7 @@ const PatientsTab = ({ token, onLogout }) => {
       )}
       ListEmptyComponent={<Empty msg="No patients assigned to your team" />}
       renderItem={({ item }) => (
-        <TouchableOpacity style={s.rowCard} onPress={() => alert("Detailed view coming soon")}>
+        <TouchableOpacity style={s.rowCard} onPress={() => alert(`Details:\n` + JSON.stringify(item, null, 2).replace(/[\{\}"]/g, ''))}>
           <View style={[s.avatar, { backgroundColor: '#bee3f8' }]}>
             <Text style={s.avatarText}>{item.full_name?.charAt(0)}</Text>
           </View>
@@ -105,7 +105,7 @@ const EnquiriesTab = ({ token, onLogout }) => {
       )}
       ListEmptyComponent={<Empty msg="No pending enquiries" />}
       renderItem={({ item }) => (
-        <TouchableOpacity style={s.rowCard} onPress={() => alert("Detailed view coming soon")}>
+        <TouchableOpacity style={s.rowCard} onPress={() => alert(`Details:\n` + JSON.stringify(item, null, 2).replace(/[\{\}"]/g, ''))}>
           <Text style={{ fontSize: 24, marginRight: 12 }}>📋</Text>
           <View style={{ flex: 1 }}>
             <Text style={s.name}>{item.customer_name}</Text>
@@ -140,7 +140,7 @@ const StaffTab = ({ token, onLogout }) => {
       )}
       ListEmptyComponent={<Empty msg="No staff in your team" />}
       renderItem={({ item }) => (
-        <TouchableOpacity style={s.rowCard} onPress={() => alert("Detailed view coming soon")}>
+        <TouchableOpacity style={s.rowCard} onPress={() => alert(`Details:\n` + JSON.stringify(item, null, 2).replace(/[\{\}"]/g, ''))}>
           <View style={[s.avatar, { backgroundColor: '#c6f6d5' }]}>
             <Text style={s.avatarText}>{item.full_name?.charAt(0)}</Text>
           </View>
@@ -178,7 +178,7 @@ const AssignmentsTab = ({ token, onLogout }) => {
       )}
       ListEmptyComponent={<Empty msg="No assignments yet" />}
       renderItem={({ item }) => (
-        <TouchableOpacity style={[s.rowCard, { alignItems: "flex-start" }]} onPress={() => alert("Detailed view coming soon")}>
+        <TouchableOpacity style={[s.rowCard, { alignItems: "flex-start" }]} onPress={() => alert(`Details:\n` + JSON.stringify(item, null, 2).replace(/[\{\}"]/g, ''))}>
           <Text style={{ fontSize: 28, marginRight: 12 }}>🏥</Text>
           <View style={{ flex: 1 }}>
             <Text style={s.name}>{item.patient?.full_name || item.customer?.full_name}</Text>
@@ -321,7 +321,7 @@ const QuotesTab = ({ token, onLogout }) => {
       )}
       ListEmptyComponent={<Empty msg="No quotations generated yet" />}
       renderItem={({ item }) => (
-        <TouchableOpacity style={s.invoiceCard} onPress={() => alert("Detailed view coming soon")}>
+        <TouchableOpacity style={s.invoiceCard} onPress={() => alert(`Details:\n` + JSON.stringify(item, null, 2).replace(/[\{\}"]/g, ''))}>
           <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
             <Text style={s.name}>{item.enquiry?.customer_name}</Text>
             <StatusBadge label={item.status} />
@@ -395,7 +395,7 @@ const ScheduleTab = ({ token, onLogout }) => {
       )}
       ListEmptyComponent={<Empty msg="No scheduled shifts for your team" />}
       renderItem={({ item }) => (
-        <TouchableOpacity style={s.invoiceCard} onPress={() => alert("Detailed view coming soon")}>
+        <TouchableOpacity style={s.invoiceCard} onPress={() => alert(`Details:\n` + JSON.stringify(item, null, 2).replace(/[\{\}"]/g, ''))}>
           <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
             <Text style={s.name}>{item.employee?.full_name}</Text>
             <StatusBadge label={item.status} />
@@ -438,7 +438,7 @@ const IncidentsTab = ({ token, onLogout }) => {
       renderItem={({ item }) => {
         const severityConfig = { CRITICAL: '🔴', HIGH: '🟠', MEDIUM: '🟡', LOW: '🟢' };
         return (
-          <TouchableOpacity style={[s.rowCard, { alignItems: "flex-start" }]} onPress={() => alert("Detailed view coming soon")}>
+          <TouchableOpacity style={[s.rowCard, { alignItems: "flex-start" }]} onPress={() => alert(`Details:\n` + JSON.stringify(item, null, 2).replace(/[\{\}"]/g, ''))}>
             <Text style={{ fontSize: 24, marginRight: 12 }}>{severityConfig[item.severity] || '⚪'}</Text>
             <View style={{ flex: 1 }}>
               <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
