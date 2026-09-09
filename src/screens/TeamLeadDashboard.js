@@ -198,6 +198,30 @@ const PaymentsTab = ({ token }) => {
     return a + (Number(i.total_amount) - paid);
   }, 0);
 
+  const handleRecordPayment = async (invoice) => {
+    const paid = invoice.payments?.filter(p => p.status === 'CONFIRMED').reduce((a, p) => a + Number(p.amount), 0) || 0;
+    const outstanding = Number(invoice.total_amount) - paid;
+    if (outstanding <= 0) return;
+    
+    // Default to paying the full outstanding balance via UPI for demo purposes
+    try {
+      await fetch(`${API}/api/finance/payments`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({
+          invoice_id: invoice.id,
+          amount: outstanding,
+          payment_method: 'UPI',
+          transaction_reference: `UPI-${Date.now()}`,
+          notes: 'Auto-collected via Mobile App'
+        })
+      });
+      onRefresh();
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
   return (
     <FlatList
       style={s.screen}
@@ -243,6 +267,11 @@ const PaymentsTab = ({ token }) => {
                   <Text key={p.id} style={s.muted}>  ✅ ₹{Number(p.amount).toLocaleString('en-IN')} via {p.payment_method} · {new Date(p.payment_date).toLocaleDateString('en-IN')}</Text>
                 ))}
               </View>
+            )}
+            {outstanding > 0 && (
+               <TouchableOpacity style={[s.btn, { marginTop: 12, backgroundColor: '#38a169' }]} onPress={() => handleRecordPayment(item)}>
+                 <Text style={s.btnText}>Record Full UPI Payment</Text>
+               </TouchableOpacity>
             )}
           </View>
         );
