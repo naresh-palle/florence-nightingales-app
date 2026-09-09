@@ -154,7 +154,7 @@ const TasksTab = ({ token, onLogout }) => {
               {item.due_date && <Text style={[s.muted, { marginTop: 4 }]}>📅 Due: {new Date(item.due_date).toLocaleDateString('en-IN')}</Text>}
               <View style={{ marginTop: 6 }}><StatusBadge label={item.status} /></View>
             </View>
-          </TouchableOpacity>
+          </View>
         );
       }}
       contentContainerStyle={{ paddingBottom: 40 }}

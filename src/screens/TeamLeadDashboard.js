@@ -280,7 +280,7 @@ const PaymentsTab = ({ token, onLogout }) => {
                  <Text style={s.btnText}>Record Full UPI Payment</Text>
                </TouchableOpacity>
             )}
-          </TouchableOpacity>
+          </View>
         );
       }}
       contentContainerStyle={{ paddingBottom: 40 }}
