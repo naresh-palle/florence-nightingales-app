@@ -220,7 +220,7 @@ const FinanceTab = ({ token, onLogout }) => {
               <Text style={s.muted}>Due: <Text style={[s.bold, { color: '#c53030' }]}>₹{outstanding.toLocaleString('en-IN')}</Text></Text>
             </View>
             <Text style={[s.muted, { marginTop: 4 }]}>📅 Due: {new Date(item.due_date).toLocaleDateString('en-IN')}</Text>
-          </View>
+          </TouchableOpacity>
         );
       }}
       contentContainerStyle={{ paddingBottom: 40 }}

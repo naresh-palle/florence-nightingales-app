@@ -78,7 +78,7 @@ const PatientsTab = ({ token, onLogout }) => {
             {item.address && <Text style={s.muted} numberOfLines={1}>📍 {item.address}</Text>}
             {item.care_requirements && <Text style={[s.muted, {color:'#c53030', marginTop:4}]} numberOfLines={2}>⚠️ {item.care_requirements}</Text>}
           </View>
-        </View>
+        </TouchableOpacity>
       )}
       contentContainerStyle={{ paddingBottom: 40 }}
     />
@@ -113,7 +113,7 @@ const EnquiriesTab = ({ token, onLogout }) => {
             {item.service_required && <Text style={s.muted}>💼 {item.service_required}</Text>}
             <View style={{ marginTop: 6 }}><StatusBadge label={item.status} /></View>
           </View>
-        </View>
+        </TouchableOpacity>
       )}
       contentContainerStyle={{ paddingBottom: 40 }}
     />
@@ -151,7 +151,7 @@ const StaffTab = ({ token, onLogout }) => {
             {item.designation && <Text style={s.muted}>🏷️ {item.designation}</Text>}
           </View>
           <StatusBadge label={item.status} />
-        </View>
+        </TouchableOpacity>
       )}
       contentContainerStyle={{ paddingBottom: 40 }}
     />
@@ -188,7 +188,7 @@ const AssignmentsTab = ({ token, onLogout }) => {
             {item.patient?.care_requirements && <Text style={[s.muted, { marginTop: 4, fontStyle: 'italic', color: '#c53030' }]} numberOfLines={2}>⚠️ {item.patient.care_requirements}</Text>}
             <View style={{ marginTop: 6 }}><StatusBadge label={item.status} /></View>
           </View>
-        </View>
+        </TouchableOpacity>
       )}
       contentContainerStyle={{ paddingBottom: 40 }}
     />
@@ -280,7 +280,7 @@ const PaymentsTab = ({ token, onLogout }) => {
                  <Text style={s.btnText}>Record Full UPI Payment</Text>
                </TouchableOpacity>
             )}
-          </View>
+          </TouchableOpacity>
         );
       }}
       contentContainerStyle={{ paddingBottom: 40 }}
@@ -345,7 +345,7 @@ const QuotesTab = ({ token, onLogout }) => {
               <Text style={s.btnText}>Accept Quote & Convert to Invoice</Text>
             </TouchableOpacity>
           )}
-        </View>
+        </TouchableOpacity>
       )}
       contentContainerStyle={{ paddingBottom: 40 }}
     />
@@ -408,7 +408,7 @@ const ScheduleTab = ({ token, onLogout }) => {
               <Text style={s.btnText}>Find Replacement (AI Match)</Text>
             </TouchableOpacity>
           )}
-        </View>
+        </TouchableOpacity>
       )}
       contentContainerStyle={{ paddingBottom: 40 }}
     />
@@ -453,7 +453,7 @@ const IncidentsTab = ({ token, onLogout }) => {
                 </TouchableOpacity>
               )}
             </View>
-          </View>
+          </TouchableOpacity>
         );
       }}
       contentContainerStyle={{ paddingBottom: 40 }}

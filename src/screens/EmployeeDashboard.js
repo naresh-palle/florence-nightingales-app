@@ -104,7 +104,7 @@ const ShiftsTab = ({ token, onLogout }) => {
                </TouchableOpacity>
             )}
           </View>
-        </View>
+        </TouchableOpacity>
       )}
       contentContainerStyle={{ paddingBottom: 40 }}
     />
@@ -154,7 +154,7 @@ const TasksTab = ({ token, onLogout }) => {
               {item.due_date && <Text style={[s.muted, { marginTop: 4 }]}>📅 Due: {new Date(item.due_date).toLocaleDateString('en-IN')}</Text>}
               <View style={{ marginTop: 6 }}><StatusBadge label={item.status} /></View>
             </View>
-          </View>
+          </TouchableOpacity>
         );
       }}
       contentContainerStyle={{ paddingBottom: 40 }}
@@ -218,7 +218,7 @@ const HelpdeskTab = ({ token, onLogout }) => {
               <Text style={[s.muted, { marginTop: 4 }]} numberOfLines={3}>{item.description}</Text>
               <Text style={[s.muted, { marginTop: 8, fontSize: 11 }]}>Reported: {new Date(item.created_at).toLocaleDateString('en-IN')}</Text>
             </View>
-          </View>
+          </TouchableOpacity>
         );
       }}
       contentContainerStyle={{ paddingBottom: 40 }}
@@ -272,7 +272,7 @@ const AttendanceTab = ({ token, onLogout }) => {
               </View>
               {hours && <Text style={s.muted}>⏱️ {hours} hours worked</Text>}
             </View>
-          </View>
+          </TouchableOpacity>
         );
       }}
       contentContainerStyle={{ paddingBottom: 40 }}
