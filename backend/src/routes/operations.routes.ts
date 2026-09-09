@@ -3,7 +3,7 @@ import { authenticate } from '../middleware/auth';
 import { requireRole } from '../middleware/rbac';
 import { createEmployee, getEmployees, deactivateEmployee } from '../controllers/employee.controller';
 import { createCustomer, getCustomers, getCustomerDetail } from '../controllers/customer.controller';
-import { getAssignments, createAssignment, getTasks, getAttendance, getTeamInvoices, getPatients, getEnquiries, getCatalog, createQuotation, getQuotations } from '../controllers/operations.controller';
+import { getAssignments, createAssignment, getTasks, getAttendance, getTeamInvoices, getPatients, getEnquiries, getCatalog, createQuotation, getQuotations, getShifts, checkInShift, checkOutShift, requestLeave } from '../controllers/operations.controller';
 import { Role } from '@prisma/client';
 
 const router = Router();
@@ -28,9 +28,15 @@ router.get('/catalog', requireRole([Role.ADMIN, Role.TEAM_LEAD]), getCatalog);
 router.post('/quotations', requireRole([Role.ADMIN, Role.TEAM_LEAD]), createQuotation);
 router.get('/quotations', requireRole([Role.ADMIN, Role.TEAM_LEAD]), getQuotations);
 
-// Assignment Routes (All roles, scoped by role)
+// Assignment & Shift Routes
 router.post('/assignments', requireRole([Role.ADMIN, Role.TEAM_LEAD]), createAssignment);
 router.get('/assignments', requireRole([Role.ADMIN, Role.TEAM_LEAD, Role.EMPLOYEE]), getAssignments);
+router.get('/shifts', requireRole([Role.ADMIN, Role.TEAM_LEAD, Role.EMPLOYEE]), getShifts);
+router.post('/shifts/:id/check-in', requireRole([Role.EMPLOYEE]), checkInShift);
+router.post('/shifts/:id/check-out', requireRole([Role.EMPLOYEE]), checkOutShift);
+
+// Leave Routes
+router.post('/leaves', requireRole([Role.EMPLOYEE]), requestLeave);
 
 // Task Routes (All roles, scoped by role)
 router.get('/tasks', requireRole([Role.ADMIN, Role.TEAM_LEAD, Role.EMPLOYEE]), getTasks);

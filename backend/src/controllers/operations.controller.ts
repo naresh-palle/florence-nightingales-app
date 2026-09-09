@@ -235,3 +235,97 @@ export const getQuotations = async (req: Request, res: Response) => {
     res.status(500).json({ error: 'Failed to fetch quotations' });
   }
 };
+
+export const getShifts = async (req: Request, res: Response) => {
+  try {
+    const where: any = {};
+    if (req.user?.role === 'EMPLOYEE') {
+      where.employee_id = req.user.id;
+    } else if (req.user?.role === 'TEAM_LEAD' && req.user.team_id) {
+      where.assignment = { team_id: req.user.team_id };
+    }
+
+    const shifts = await prisma.shift.findMany({
+      where,
+      include: {
+        assignment: {
+          include: { patient: { select: { full_name: true, address: true, care_requirements: true } } }
+        },
+        employee: { select: { full_name: true } }
+      },
+      orderBy: { shift_date: 'asc' }
+    });
+    res.json(shifts);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to fetch shifts' });
+  }
+};
+
+export const checkInShift = async (req: Request, res: Response) => {
+  try {
+    const shift = await prisma.shift.update({
+      where: { id: req.params.id },
+      data: {
+        actual_start: new Date(),
+        status: 'IN_PROGRESS'
+      }
+    });
+    
+    await prisma.auditLog.create({
+      data: { action: 'SHIFT_CHECKIN', entity_type: 'SHIFT', entity_id: shift.id, actor_user_id: req.user?.id, result: 'SUCCESS' }
+    });
+    
+    res.json(shift);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to check in' });
+  }
+};
+
+export const checkOutShift = async (req: Request, res: Response) => {
+  try {
+    const shift = await prisma.shift.update({
+      where: { id: req.params.id },
+      data: {
+        actual_end: new Date(),
+        status: 'COMPLETED'
+      }
+    });
+    
+    await prisma.attendance.create({
+      data: {
+        employee_id: req.user!.id,
+        date: new Date(),
+        status: 'PRESENT',
+        check_in: shift.actual_start,
+        check_out: shift.actual_end
+      }
+    });
+
+    await prisma.auditLog.create({
+      data: { action: 'SHIFT_CHECKOUT', entity_type: 'SHIFT', entity_id: shift.id, actor_user_id: req.user?.id, result: 'SUCCESS' }
+    });
+    
+    res.json(shift);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to check out' });
+  }
+};
+
+export const requestLeave = async (req: Request, res: Response) => {
+  const { leave_type, start_date, end_date, reason } = req.body;
+  try {
+    const leave = await prisma.leaveRequest.create({
+      data: {
+        employee_id: req.user!.id,
+        leave_type,
+        start_date: new Date(start_date),
+        end_date: new Date(end_date),
+        reason
+      }
+    });
+
+    res.status(201).json(leave);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to request leave' });
+  }
+};

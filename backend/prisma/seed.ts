@@ -274,6 +274,36 @@ async function main() {
   }
   console.log('✅ HR data created');
 
+  // ── Shifts ─────────────────────────────────────────────────────────────────
+  const assignmentsList = await prisma.careAssignment.findMany();
+  for (const assignment of assignmentsList) {
+    if (!assignment.employee_id) continue;
+    const shiftExists = await prisma.shift.findFirst({ where: { assignment_id: assignment.id } });
+    if (!shiftExists) {
+      await prisma.shift.create({
+        data: {
+          assignment_id: assignment.id,
+          employee_id: assignment.employee_id,
+          shift_date: new Date(),
+          start_time: assignment.start_time || '08:00',
+          end_time: assignment.end_time || '20:00',
+          status: 'SCHEDULED'
+        }
+      });
+      await prisma.shift.create({
+        data: {
+          assignment_id: assignment.id,
+          employee_id: assignment.employee_id,
+          shift_date: new Date(new Date().setDate(new Date().getDate() + 1)),
+          start_time: assignment.start_time || '08:00',
+          end_time: assignment.end_time || '20:00',
+          status: 'SCHEDULED'
+        }
+      });
+    }
+  }
+  console.log('✅ Shifts created');
+
   // ── Service Catalog & Quoting ──────────────────────────────────────────────
   const catExists = await prisma.serviceCategory.findFirst();
   let nursingCatId, physioCatId, serviceId1, serviceId2;

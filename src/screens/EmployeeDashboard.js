@@ -40,11 +40,24 @@ const Loading = () => <View style={s.center}><ActivityIndicator size="large" col
 const Empty = ({ msg }) => <View style={s.emptyWrap}><Text style={{ fontSize: 48 }}>📭</Text><Text style={s.emptyText}>{msg}</Text></View>;
 const Divider = () => <View style={{ height: 1, backgroundColor: '#edf2f7', marginHorizontal: 16 }} />;
 
-// ── ASSIGNMENTS ───────────────────────────────────────────────────────────────
-const AssignmentsTab = ({ token }) => {
-  const { data, loading, refreshing, onRefresh } = useFetch(`${API}/api/operations/assignments`, token);
+// ── SHIFTS ────────────────────────────────────────────────────────────────────
+const ShiftsTab = ({ token }) => {
+  const { data, loading, refreshing, onRefresh } = useFetch(`${API}/api/operations/shifts`, token);
   if (loading) return <Loading />;
   const items = Array.isArray(data) ? data : [];
+
+  const handleCheckInOut = async (shift, action) => {
+    try {
+      await fetch(`${API}/api/operations/shifts/${shift.id}/${action}`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      onRefresh();
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
   return (
     <FlatList
       style={s.screen}
@@ -54,11 +67,11 @@ const AssignmentsTab = ({ token }) => {
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
       ListHeaderComponent={() => (
         <>
-          <DashHeader title="My Assignments" subtitle="Today's care schedule" />
-          <View style={s.body}><Text style={s.sectionTitle}>Active Duties ({items.length})</Text></View>
+          <DashHeader title="My Shifts" subtitle="Today's care schedule" />
+          <View style={s.body}><Text style={s.sectionTitle}>Upcoming & Active Shifts ({items.length})</Text></View>
         </>
       )}
-      ListEmptyComponent={<Empty msg="No assignments for you right now" />}
+      ListEmptyComponent={<Empty msg="No shifts scheduled for you right now" />}
       renderItem={({ item }) => (
         <View style={[s.rowCard, { alignItems: 'flex-start' }]}>
           <View style={[s.timeBox]}>
@@ -67,13 +80,22 @@ const AssignmentsTab = ({ token }) => {
             <Text style={s.timeText}>{item.end_time || '--'}</Text>
           </View>
           <View style={{ flex: 1, marginLeft: 12 }}>
-            <Text style={s.name}>{item.patient?.full_name || item.customer?.full_name}</Text>
-            <Text style={s.muted}>📍 {item.customer?.address || 'Address not set'}</Text>
-            <Text style={s.muted}>📞 {item.customer?.phone}</Text>
-            <Text style={s.muted}>🏥 {item.service_type}</Text>
-            {item.patient?.care_requirements && <Text style={[s.muted, { marginTop: 4, fontStyle: 'italic', color: '#c53030' }]} numberOfLines={2}>⚠️ {item.patient.care_requirements}</Text>}
-            {item.notes && <Text style={[s.muted, { marginTop: 4, fontStyle: 'italic', color: '#4a5568' }]} numberOfLines={2}>{item.notes}</Text>}
+            <Text style={s.name}>{item.assignment?.patient?.full_name || 'Patient'}</Text>
+            <Text style={s.muted}>📅 {new Date(item.shift_date).toLocaleDateString('en-IN')}</Text>
+            <Text style={s.muted}>📍 {item.assignment?.patient?.address || 'Address not set'}</Text>
+            {item.assignment?.patient?.care_requirements && <Text style={[s.muted, { marginTop: 4, fontStyle: 'italic', color: '#c53030' }]} numberOfLines={2}>⚠️ {item.assignment.patient.care_requirements}</Text>}
             <View style={{ marginTop: 6 }}><StatusBadge label={item.status} /></View>
+            
+            {item.status === 'SCHEDULED' && (
+               <TouchableOpacity style={[s.btn, { marginTop: 12, backgroundColor: '#3182ce' }]} onPress={() => handleCheckInOut(item, 'check-in')}>
+                 <Text style={s.btnText}>Check In</Text>
+               </TouchableOpacity>
+            )}
+            {item.status === 'IN_PROGRESS' && (
+               <TouchableOpacity style={[s.btn, { marginTop: 12, backgroundColor: '#38a169' }]} onPress={() => handleCheckInOut(item, 'check-out')}>
+                 <Text style={s.btnText}>Check Out & End Shift</Text>
+               </TouchableOpacity>
+            )}
           </View>
         </View>
       )}
@@ -258,7 +280,12 @@ const ProfileTab = ({ token }) => {
 
         {profile?.leave_requests?.length > 0 && (
           <>
-            <Text style={[s.sectionTitle, { marginTop: 16 }]}>Recent Leave Requests</Text>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 16, marginBottom: 12 }}>
+              <Text style={s.sectionTitle}>Recent Leave Requests</Text>
+              <TouchableOpacity style={{ backgroundColor: '#edf2f7', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 6 }}>
+                <Text style={{ fontSize: 12, fontWeight: '700', color: '#4a5568' }}>+ New Leave</Text>
+              </TouchableOpacity>
+            </View>
             {profile.leave_requests.map(l => (
               <View key={l.id} style={[s.card, { paddingVertical: 14 }]}>
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -286,12 +313,12 @@ export default function EmployeeDashboard({ token }) {
         tabBarStyle: { borderTopWidth: 0, elevation: 10, shadowOpacity: 0.1 },
         tabBarLabelStyle: { fontSize: 11, fontWeight: '600' },
         tabBarIcon: ({ color }) => {
-          const icons = { Assignments: '📋', Tasks: '✅', Attendance: '📅', Profile: '👤' };
+          const icons = { Shifts: '📋', Tasks: '✅', Attendance: '📅', Profile: '👤' };
           return <Text style={{ fontSize: 20, color }}>{icons[route.name]}</Text>;
         }
       })}
     >
-      <Tab.Screen name="Assignments">{() => <AssignmentsTab token={token} />}</Tab.Screen>
+      <Tab.Screen name="Shifts">{() => <ShiftsTab token={token} />}</Tab.Screen>
       <Tab.Screen name="Tasks">{() => <TasksTab token={token} />}</Tab.Screen>
       <Tab.Screen name="Attendance">{() => <AttendanceTab token={token} />}</Tab.Screen>
       <Tab.Screen name="Profile">{() => <ProfileTab token={token} />}</Tab.Screen>
@@ -318,4 +345,6 @@ const s = StyleSheet.create({
   timeSep: { color: '#90cdf4', fontSize: 12 },
   emptyWrap: { padding: 40, alignItems: 'center' },
   emptyText: { color: '#718096', textAlign: 'center', marginTop: 8 },
+  btn: { padding: 12, borderRadius: 8, alignItems: 'center' },
+  btnText: { color: '#fff', fontWeight: '700', fontSize: 14 }
 });
