@@ -345,6 +345,52 @@ const QuotesTab = ({ token }) => {
   );
 };
 
+// ── INCIDENTS ──────────────────────────────────────────────────────────────────
+const IncidentsTab = ({ token }) => {
+  const { data, loading, refreshing, onRefresh } = useFetch(`${API}/api/operations/incidents`, token);
+  if (loading) return <Loading />;
+  const incidents = Array.isArray(data) ? data : [];
+
+  return (
+    <FlatList
+      style={s.screen}
+      data={incidents}
+      keyExtractor={i => i.id}
+      ItemSeparatorComponent={Divider}
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+      ListHeaderComponent={() => (
+        <>
+          <DashHeader title="Helpdesk" subtitle="Incidents reported by your team" />
+          <View style={s.body}><Text style={s.sectionTitle}>Active Tickets ({incidents.length})</Text></View>
+        </>
+      )}
+      ListEmptyComponent={<Empty msg="No incidents reported by your team" />}
+      renderItem={({ item }) => {
+        const severityConfig = { CRITICAL: '🔴', HIGH: '🟠', MEDIUM: '🟡', LOW: '🟢' };
+        return (
+          <View style={[s.rowCard, { alignItems: 'flex-start' }]}>
+            <Text style={{ fontSize: 24, marginRight: 12 }}>{severityConfig[item.severity] || '⚪'}</Text>
+            <View style={{ flex: 1 }}>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                <Text style={s.name} numberOfLines={1}>{item.title}</Text>
+                <StatusBadge label={item.status} />
+              </View>
+              <Text style={[s.muted, { marginTop: 4 }]} numberOfLines={3}>{item.description}</Text>
+              <Text style={[s.muted, { marginTop: 8, fontSize: 11 }]}>Reported by: {item.reported_by?.full_name} · {new Date(item.created_at).toLocaleDateString('en-IN')}</Text>
+              {item.status === 'OPEN' && (
+                <TouchableOpacity style={[s.btn, { marginTop: 12, backgroundColor: '#3182ce' }]}>
+                  <Text style={s.btnText}>Acknowledge & Resolve</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+          </View>
+        );
+      }}
+      contentContainerStyle={{ paddingBottom: 40 }}
+    />
+  );
+};
+
 export default function TeamLeadDashboard({ token }) {
   return (
     <Tab.Navigator

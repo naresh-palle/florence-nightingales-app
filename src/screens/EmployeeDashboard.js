@@ -155,6 +155,70 @@ const TasksTab = ({ token }) => {
   );
 };
 
+// ── HELPDESK / INCIDENTS ──────────────────────────────────────────────────────
+const HelpdeskTab = ({ token }) => {
+  const { data, loading, refreshing, onRefresh } = useFetch(`${API}/api/operations/incidents`, token);
+  if (loading) return <Loading />;
+  const incidents = Array.isArray(data) ? data : [];
+  
+  const handleReport = async () => {
+    // In a real app this would open a modal with a form
+    try {
+      await fetch(`${API}/api/operations/incidents`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({
+          title: 'Field Issue Reported via App',
+          description: 'An employee requested support from the field.',
+          severity: 'HIGH'
+        })
+      });
+      onRefresh();
+    } catch(e) {
+      console.error(e);
+    }
+  };
+
+  return (
+    <FlatList
+      style={s.screen}
+      data={incidents}
+      keyExtractor={i => i.id}
+      ItemSeparatorComponent={Divider}
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+      ListHeaderComponent={() => (
+        <>
+          <DashHeader title="Helpdesk" subtitle="Report issues & get support" />
+          <View style={s.body}>
+            <TouchableOpacity style={[s.btn, { backgroundColor: '#c53030', marginBottom: 16 }]} onPress={handleReport}>
+              <Text style={s.btnText}>🚨 Report New Incident</Text>
+            </TouchableOpacity>
+            <Text style={s.sectionTitle}>My Active Tickets ({incidents.length})</Text>
+          </View>
+        </>
+      )}
+      ListEmptyComponent={<Empty msg="No incidents reported" />}
+      renderItem={({ item }) => {
+        const severityConfig = { CRITICAL: '🔴', HIGH: '🟠', MEDIUM: '🟡', LOW: '🟢' };
+        return (
+          <View style={[s.rowCard, { alignItems: 'flex-start' }]}>
+            <Text style={{ fontSize: 24, marginRight: 12 }}>{severityConfig[item.severity] || '⚪'}</Text>
+            <View style={{ flex: 1 }}>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                <Text style={s.name} numberOfLines={1}>{item.title}</Text>
+                <StatusBadge label={item.status} />
+              </View>
+              <Text style={[s.muted, { marginTop: 4 }]} numberOfLines={3}>{item.description}</Text>
+              <Text style={[s.muted, { marginTop: 8, fontSize: 11 }]}>Reported: {new Date(item.created_at).toLocaleDateString('en-IN')}</Text>
+            </View>
+          </View>
+        );
+      }}
+      contentContainerStyle={{ paddingBottom: 40 }}
+    />
+  );
+};
+
 // ── ATTENDANCE ────────────────────────────────────────────────────────────────
 const AttendanceTab = ({ token }) => {
   const { data, loading, refreshing, onRefresh } = useFetch(`${API}/api/operations/attendance`, token);
@@ -311,15 +375,16 @@ export default function EmployeeDashboard({ token }) {
         tabBarActiveTintColor: '#38a169',
         tabBarInactiveTintColor: '#a0aec0',
         tabBarStyle: { borderTopWidth: 0, elevation: 10, shadowOpacity: 0.1 },
-        tabBarLabelStyle: { fontSize: 11, fontWeight: '600' },
+        tabBarLabelStyle: { fontSize: 10, fontWeight: '600' },
         tabBarIcon: ({ color }) => {
-          const icons = { Shifts: '📋', Tasks: '✅', Attendance: '📅', Profile: '👤' };
-          return <Text style={{ fontSize: 20, color }}>{icons[route.name]}</Text>;
+          const icons = { Shifts: '📋', Tasks: '✅', Helpdesk: '🆘', Attendance: '📅', Profile: '👤' };
+          return <Text style={{ fontSize: 18, color }}>{icons[route.name]}</Text>;
         }
       })}
     >
       <Tab.Screen name="Shifts">{() => <ShiftsTab token={token} />}</Tab.Screen>
       <Tab.Screen name="Tasks">{() => <TasksTab token={token} />}</Tab.Screen>
+      <Tab.Screen name="Helpdesk">{() => <HelpdeskTab token={token} />}</Tab.Screen>
       <Tab.Screen name="Attendance">{() => <AttendanceTab token={token} />}</Tab.Screen>
       <Tab.Screen name="Profile">{() => <ProfileTab token={token} />}</Tab.Screen>
     </Tab.Navigator>

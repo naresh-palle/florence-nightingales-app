@@ -304,6 +304,35 @@ async function main() {
   }
   console.log('✅ Shifts created');
 
+  // ── Incidents ──────────────────────────────────────────────────────────────
+  const incidentExists = await prisma.incident.findFirst();
+  if (!incidentExists && assignmentsList.length > 0) {
+    const activeAssignment = assignmentsList.find(a => a.employee_id);
+    if (activeAssignment) {
+      await prisma.incident.create({
+        data: {
+          title: 'Patient Medication Refill',
+          description: 'The patient is running low on morning medication. Need refill by tomorrow.',
+          severity: 'MEDIUM',
+          status: 'OPEN',
+          reported_by_id: activeAssignment.employee_id!,
+          assignment_id: activeAssignment.id
+        }
+      });
+      await prisma.incident.create({
+        data: {
+          title: 'Equipment Fault',
+          description: 'The oxygen concentrator is making a loud noise.',
+          severity: 'HIGH',
+          status: 'IN_PROGRESS',
+          reported_by_id: activeAssignment.employee_id!,
+          assignment_id: activeAssignment.id
+        }
+      });
+    }
+    console.log('✅ Incidents created');
+  }
+
   // ── Service Catalog & Quoting ──────────────────────────────────────────────
   const catExists = await prisma.serviceCategory.findFirst();
   let nursingCatId, physioCatId, serviceId1, serviceId2;

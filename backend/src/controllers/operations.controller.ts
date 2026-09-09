@@ -329,3 +329,50 @@ export const requestLeave = async (req: Request, res: Response) => {
     res.status(500).json({ error: 'Failed to request leave' });
   }
 };
+
+export const getIncidents = async (req: Request, res: Response) => {
+  try {
+    const where: any = {};
+    if (req.user?.role === 'EMPLOYEE') {
+      where.reported_by_id = req.user.id;
+    } else if (req.user?.role === 'TEAM_LEAD' && req.user.team_id) {
+      where.assignment = { team_id: req.user.team_id };
+    }
+
+    const incidents = await prisma.incident.findMany({
+      where,
+      include: {
+        reported_by: { select: { full_name: true } },
+        assigned_to: { select: { full_name: true } },
+        assignment: { select: { patient: { select: { full_name: true } } } }
+      },
+      orderBy: { created_at: 'desc' }
+    });
+    res.json(incidents);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to fetch incidents' });
+  }
+};
+
+export const createIncident = async (req: Request, res: Response) => {
+  const { title, description, severity, assignment_id } = req.body;
+  try {
+    const incident = await prisma.incident.create({
+      data: {
+        title,
+        description,
+        severity: severity || 'LOW',
+        reported_by_id: req.user!.id,
+        assignment_id
+      }
+    });
+
+    await prisma.auditLog.create({
+      data: { action: 'INCIDENT_CREATED', entity_type: 'INCIDENT', entity_id: incident.id, actor_user_id: req.user?.id, result: 'SUCCESS' }
+    });
+
+    res.status(201).json(incident);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to create incident' });
+  }
+};

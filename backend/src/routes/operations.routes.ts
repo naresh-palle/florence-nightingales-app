@@ -3,7 +3,7 @@ import { authenticate } from '../middleware/auth';
 import { requireRole } from '../middleware/rbac';
 import { createEmployee, getEmployees, deactivateEmployee } from '../controllers/employee.controller';
 import { createCustomer, getCustomers, getCustomerDetail } from '../controllers/customer.controller';
-import { getAssignments, createAssignment, getTasks, getAttendance, getTeamInvoices, getPatients, getEnquiries, getCatalog, createQuotation, getQuotations, getShifts, checkInShift, checkOutShift, requestLeave } from '../controllers/operations.controller';
+import { getAssignments, createAssignment, getTasks, getAttendance, getTeamInvoices, getPatients, getEnquiries, getCatalog, createQuotation, getQuotations, getShifts, checkInShift, checkOutShift, requestLeave, getIncidents, createIncident } from '../controllers/operations.controller';
 import { Role } from '@prisma/client';
 
 const router = Router();
@@ -37,6 +37,10 @@ router.post('/shifts/:id/check-out', requireRole([Role.EMPLOYEE]), checkOutShift
 
 // Leave Routes
 router.post('/leaves', requireRole([Role.EMPLOYEE]), requestLeave);
+
+// Incident / Helpdesk Routes
+router.get('/incidents', requireRole([Role.ADMIN, Role.TEAM_LEAD, Role.EMPLOYEE]), getIncidents);
+router.post('/incidents', requireRole([Role.ADMIN, Role.TEAM_LEAD, Role.EMPLOYEE]), createIncident);
 
 // Task Routes (All roles, scoped by role)
 router.get('/tasks', requireRole([Role.ADMIN, Role.TEAM_LEAD, Role.EMPLOYEE]), getTasks);
