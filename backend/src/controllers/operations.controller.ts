@@ -17,6 +17,7 @@ export const getAssignments = async (req: Request, res: Response) => {
       where,
       include: {
         customer: { select: { full_name: true, phone: true, address: true } },
+        patient: { select: { full_name: true, care_requirements: true } },
         employee: { select: { full_name: true, phone: true } }
       },
       orderBy: { start_date: 'desc' }

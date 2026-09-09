@@ -19,7 +19,10 @@ router.get('/me', authenticate, async (req, res) => {
         id: true, full_name: true, email: true, phone: true,
         role: true, status: true, designation: true,
         qualification: true, experience: true, joining_date: true,
-        team_id: true
+        team_id: true,
+        documents: true,
+        certifications: true,
+        leave_requests: true
       }
     });
     res.json(user);

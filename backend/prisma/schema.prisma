@@ -187,6 +187,8 @@ model Enquiry {
   assigned_team_id String?
   assigned_team    Team?   @relation(fields: [assigned_team_id], references: [id])
 
+  quotation Quotation?
+
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
 }
@@ -362,6 +364,63 @@ model PaymentReminder {
   invoice     Invoice  @relation(fields: [invoice_id], references: [id])
   sender_id   String
   sender      User     @relation("SentBy", fields: [sender_id], references: [id])
+}
+
+// ── SERVICE CATALOG & QUOTING ────────────────────────────────────────────────
+
+model ServiceCategory {
+  id          String           @id @default(uuid())
+  name        String           @unique
+  description String?
+  services    ServiceCatalog[]
+  created_at  DateTime         @default(now())
+  updated_at  DateTime         @updatedAt
+}
+
+model ServiceCatalog {
+  id           String  @id @default(uuid())
+  name         String
+  description  String?
+  base_price   Decimal @db.Decimal(10, 2)
+  billing_unit String
+
+  category_id String
+  category    ServiceCategory @relation(fields: [category_id], references: [id])
+
+  quotation_items QuotationItem[]
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+}
+
+model Quotation {
+  id               String    @id @default(uuid())
+  quotation_number String    @unique
+  total_amount     Decimal   @db.Decimal(10, 2)
+  status           String    @default("DRAFT")
+  valid_until      DateTime?
+  notes            String?
+
+  enquiry_id String  @unique
+  enquiry    Enquiry @relation(fields: [enquiry_id], references: [id])
+
+  items QuotationItem[]
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+}
+
+model QuotationItem {
+  id          String  @id @default(uuid())
+  quantity    Int     @default(1)
+  unit_price  Decimal @db.Decimal(10, 2)
+  total_price Decimal @db.Decimal(10, 2)
+
+  quotation_id String
+  quotation    Quotation @relation(fields: [quotation_id], references: [id])
+
+  service_id String
+  service    ServiceCatalog @relation(fields: [service_id], references: [id])
 }
 
 // ── HR & EMPLOYEE MANAGEMENT ─────────────────────────────────────────────────
