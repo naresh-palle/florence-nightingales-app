@@ -142,6 +142,10 @@ model User {
   leave_requests  LeaveRequest[]
   approved_leaves LeaveRequest[]     @relation("ApprovedLeaves")
 
+  // Incidents
+  reported_incidents Incident[] @relation("ReportedIncidents")
+  assigned_incidents Incident[] @relation("AssignedIncidents")
+
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
 }
@@ -271,7 +275,8 @@ model CareAssignment {
   team_id String
   team    Team   @relation(fields: [team_id], references: [id])
 
-  shifts Shift[]
+  shifts    Shift[]
+  incidents Incident[]
 
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
@@ -489,6 +494,26 @@ model LeaveRequest {
 }
 
 // ── SYSTEM ───────────────────────────────────────────────────────────────────
+
+model Incident {
+  id          String @id @default(uuid())
+  title       String
+  description String
+  severity    String @default("LOW") // LOW, MEDIUM, HIGH, CRITICAL
+  status      String @default("OPEN") // OPEN, IN_PROGRESS, RESOLVED, CLOSED
+
+  reported_by_id String
+  reported_by    User   @relation("ReportedIncidents", fields: [reported_by_id], references: [id])
+
+  assigned_to_id String?
+  assigned_to    User?   @relation("AssignedIncidents", fields: [assigned_to_id], references: [id])
+
+  assignment_id String?
+  assignment    CareAssignment? @relation(fields: [assignment_id], references: [id])
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+}
 
 model AuditLog {
   id          String   @id @default(uuid())
