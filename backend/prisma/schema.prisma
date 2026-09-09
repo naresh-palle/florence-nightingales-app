@@ -129,6 +129,7 @@ model User {
   leading_teams Team[]  @relation("TeamLead")
 
   assignments       CareAssignment[]
+  shifts            Shift[]
   tasks             Task[]
   attendance        Attendance[]
   payments_received Payment[]         @relation("ReceivedBy")
@@ -269,6 +270,25 @@ model CareAssignment {
 
   team_id String
   team    Team   @relation(fields: [team_id], references: [id])
+
+  shifts Shift[]
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+}
+
+model Shift {
+  id            String         @id @default(uuid())
+  assignment_id String
+  assignment    CareAssignment @relation(fields: [assignment_id], references: [id])
+  employee_id   String
+  employee      User           @relation(fields: [employee_id], references: [id])
+  shift_date    DateTime
+  start_time    String
+  end_time      String
+  actual_start  DateTime?
+  actual_end    DateTime?
+  status        String         @default("SCHEDULED") // SCHEDULED, IN_PROGRESS, COMPLETED, MISSED
 
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
