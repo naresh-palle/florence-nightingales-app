@@ -72,11 +72,12 @@ export const getAllInvoices = async (req: Request, res: Response) => {
 
 export const seedMockData = async (req: Request, res: Response) => {
   try {
-    const cust = await prisma.customer.findFirst() || await prisma.customer.create({ data: { full_name: 'Mock Customer', phone: '123', email: 'c@m.com', address: '123 Main' }});
+    const team = await prisma.team.findFirst() || await prisma.team.create({ data: { name: 'Mock Team' } });
+    const cust = await prisma.customer.findFirst() || await prisma.customer.create({ data: { full_name: 'Mock Customer', phone: '123', email: 'c@m.com', address: '123 Main', team_id: team.id }});
     await prisma.invoice.createMany({
       data: [
-        { customer_id: cust.id, invoice_number: 'INV-' + Date.now(), total_amount: 15000, status: 'PENDING', due_date: new Date(Date.now() + 86400000) },
-        { customer_id: cust.id, invoice_number: 'INV-' + (Date.now()+1), total_amount: 25000, status: 'PAID', due_date: new Date(Date.now() - 86400000) }
+        { customer_id: cust.id, invoice_number: 'INV-' + Date.now(), total_amount: 15000, status: 'PENDING', due_date: new Date(Date.now() + 86400000), service_period_start: new Date(), service_period_end: new Date(), billing_date: new Date() },
+        { customer_id: cust.id, invoice_number: 'INV-' + (Date.now()+1), total_amount: 25000, status: 'PAID', due_date: new Date(Date.now() - 86400000), service_period_start: new Date(), service_period_end: new Date(), billing_date: new Date() }
       ]
     });
     await prisma.auditLog.createMany({
