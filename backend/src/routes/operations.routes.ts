@@ -3,7 +3,7 @@ import { authenticate } from '../middleware/auth';
 import { requireRole } from '../middleware/rbac';
 import { createEmployee, getEmployees, deactivateEmployee } from '../controllers/employee.controller';
 import { createCustomer, getCustomers, getCustomerDetail } from '../controllers/customer.controller';
-import { getAssignments, createAssignment, getTasks, getAttendance, getTeamInvoices } from '../controllers/operations.controller';
+import { getAssignments, createAssignment, getTasks, getAttendance, getTeamInvoices, getPatients, getEnquiries } from '../controllers/operations.controller';
 import { Role } from '@prisma/client';
 
 const router = Router();
@@ -18,6 +18,10 @@ router.delete('/employees/:id', requireRole([Role.ADMIN, Role.TEAM_LEAD]), deact
 router.post('/customers', requireRole([Role.ADMIN, Role.TEAM_LEAD]), createCustomer);
 router.get('/customers', requireRole([Role.ADMIN, Role.TEAM_LEAD]), getCustomers);
 router.get('/customers/:id', requireRole([Role.ADMIN, Role.TEAM_LEAD]), getCustomerDetail);
+
+// Patient & Enquiry Routes
+router.get('/patients', requireRole([Role.ADMIN, Role.TEAM_LEAD]), getPatients);
+router.get('/enquiries', requireRole([Role.ADMIN, Role.TEAM_LEAD]), getEnquiries);
 
 // Assignment Routes (All roles, scoped by role)
 router.post('/assignments', requireRole([Role.ADMIN, Role.TEAM_LEAD]), createAssignment);

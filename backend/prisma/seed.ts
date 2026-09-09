@@ -16,17 +16,24 @@ async function main() {
     create: { email: 'mohan@florence.com', full_name: 'Mohan Kumar', phone: '9000000001', password_hash: pw, role: Role.ADMIN, status: UserStatus.ACTIVE, designation: 'Operations Manager' },
   });
 
+  // ── Organization & Branch ──────────────────────────────────────────────────
+  let org = await prisma.organization.findFirst({ where: { name: 'Florence Nightingales' } });
+  if (!org) org = await prisma.organization.create({ data: { name: 'Florence Nightingales' } });
+
+  let branchHQ = await prisma.branch.findFirst({ where: { name: 'Hyderabad HQ' } });
+  if (!branchHQ) branchHQ = await prisma.branch.create({ data: { name: 'Hyderabad HQ', location: 'Jubilee Hills', organization_id: org.id } });
+
   let team1 = await prisma.team.findFirst({ where: { name: 'Alpha Nursing Team' } });
-  if (!team1) team1 = await prisma.team.create({ data: { name: 'Alpha Nursing Team', description: 'Critical care support - Hyderabad West' } });
+  if (!team1) team1 = await prisma.team.create({ data: { name: 'Alpha Nursing Team', description: 'Critical care support - Hyderabad West', branch_id: branchHQ.id } });
 
   let team2 = await prisma.team.findFirst({ where: { name: 'Beta Home Care Team' } });
-  if (!team2) team2 = await prisma.team.create({ data: { name: 'Beta Home Care Team', description: 'Elderly and post-surgery home care - Hyderabad East' } });
+  if (!team2) team2 = await prisma.team.create({ data: { name: 'Beta Home Care Team', description: 'Elderly and post-surgery home care - Hyderabad East', branch_id: branchHQ.id } });
 
   let team3 = await prisma.team.findFirst({ where: { name: 'Gamma Physiotherapy Team' } });
-  if (!team3) team3 = await prisma.team.create({ data: { name: 'Gamma Physiotherapy Team', description: 'Specialized physiotherapy and rehab - Secunderabad' } });
+  if (!team3) team3 = await prisma.team.create({ data: { name: 'Gamma Physiotherapy Team', description: 'Specialized physiotherapy and rehab - Secunderabad', branch_id: branchHQ.id } });
 
   let team4 = await prisma.team.findFirst({ where: { name: 'Delta General Care' } });
-  if (!team4) team4 = await prisma.team.create({ data: { name: 'Delta General Care', description: 'General nursing and routine checkups - Cyberabad' } });
+  if (!team4) team4 = await prisma.team.create({ data: { name: 'Delta General Care', description: 'General nursing and routine checkups - Cyberabad', branch_id: branchHQ.id } });
 
   const lead1 = await prisma.user.upsert({
     where: { email: 'prashanth@florence.com' },
@@ -98,13 +105,30 @@ async function main() {
   ];
 
   const customers: any[] = [];
+  const patients: any[] = [];
   for (const c of customersData) {
     let cust = await prisma.customer.findFirst({ where: { phone: c.phone } });
-    if (!cust) cust = await prisma.customer.create({ data: { ...c, status: CustomerStatus.ACTIVE } });
+    if (!cust) cust = await prisma.customer.create({ data: { ...c, customer_number: `CUS-${c.phone.slice(-4)}`, status: CustomerStatus.ACTIVE } });
     customers.push(cust);
+
+    // Ensure a corresponding Patient exists
+    let pat = await prisma.patient.findFirst({ where: { customer_id: cust.id } });
+    if (!pat) {
+      pat = await prisma.patient.create({
+        data: {
+          patient_number: `PAT-${c.phone.slice(-4)}`,
+          full_name: `${c.full_name} (Patient)`,
+          address: c.address,
+          care_requirements: c.notes,
+          customer_id: cust.id
+        }
+      });
+    }
+    patients.push(pat);
   }
   const [c1, c2, c3, c4, c5] = customers;
-  console.log('✅ Customers created');
+  const [p1, p2, p3, p4, p5] = patients;
+  console.log('✅ Customers and Patients created');
 
   // ── Invoices & Payments ────────────────────────────────────────────────────
   const invoiceData = [
@@ -170,13 +194,13 @@ async function main() {
 
   // ── Assignments ────────────────────────────────────────────────────────────
   const assignmentsData = [
-    { customer_id: c1.id, employee_id: staff1.id, service_type: '24/7 Critical Nursing', start_time: '08:00', end_time: '20:00', status: AssignmentStatus.IN_PROGRESS, notes: 'Primary nurse, daily wound dressing and vitals.' },
-    { customer_id: c2.id, employee_id: staff1.id, service_type: 'Elderly Day Care', start_time: '09:00', end_time: '17:00', status: AssignmentStatus.ASSIGNED, notes: 'Evening blood sugar check mandatory.' },
-    { customer_id: c3.id, employee_id: staff2.id, service_type: 'Post-Surgery Rehab', start_time: '07:00', end_time: '13:00', status: AssignmentStatus.IN_PROGRESS, notes: 'Assist physiotherapist and monitor pain levels.' },
+    { assignment_number: 'ASG-1001', customer_id: c1.id, patient_id: p1.id, employee_id: staff1.id, service_type: '24/7 Critical Nursing', start_time: '08:00', end_time: '20:00', status: AssignmentStatus.IN_PROGRESS, notes: 'Primary nurse, daily wound dressing and vitals.' },
+    { assignment_number: 'ASG-1002', customer_id: c2.id, patient_id: p2.id, employee_id: staff1.id, service_type: 'Elderly Day Care', start_time: '09:00', end_time: '17:00', status: AssignmentStatus.ASSIGNED, notes: 'Evening blood sugar check mandatory.' },
+    { assignment_number: 'ASG-1003', customer_id: c3.id, patient_id: p3.id, employee_id: staff2.id, service_type: 'Post-Surgery Rehab', start_time: '07:00', end_time: '13:00', status: AssignmentStatus.IN_PROGRESS, notes: 'Assist physiotherapist and monitor pain levels.' },
   ];
 
   for (const a of assignmentsData) {
-    const exists = await prisma.careAssignment.findFirst({ where: { customer_id: a.customer_id, employee_id: a.employee_id } });
+    const exists = await prisma.careAssignment.findFirst({ where: { assignment_number: a.assignment_number } });
     if (!exists) {
       await prisma.careAssignment.create({ data: { ...a, start_date: new Date(), team_id: team1.id } });
     }
@@ -196,6 +220,20 @@ async function main() {
     if (!exists) await prisma.task.create({ data: { ...t, team_id: team1.id } });
   }
   console.log('✅ Tasks created');
+
+  // ── Enquiries ─────────────────────────────────────────────────────────────
+  const enquiryData = [
+    { enquiry_number: 'ENQ-001', customer_name: 'Vikram Seth', phone: '9012345678', service_required: 'Physiotherapy', location: 'Madhapur', status: 'NEW', assigned_team_id: team3.id },
+    { enquiry_number: 'ENQ-002', customer_name: 'Anjali Sharma', phone: '9087654321', service_required: 'Elderly Care', location: 'Gachibowli', status: 'CONTACTED', assigned_team_id: team2.id },
+  ];
+
+  for (const eq of enquiryData) {
+    let exists = await prisma.enquiry.findFirst({ where: { enquiry_number: eq.enquiry_number } });
+    if (!exists) {
+      await prisma.enquiry.create({ data: eq as any });
+    }
+  }
+  console.log('✅ Enquiries created');
 
   // ── Attendance ─────────────────────────────────────────────────────────────
   for (const emp of [staff1, staff2]) {

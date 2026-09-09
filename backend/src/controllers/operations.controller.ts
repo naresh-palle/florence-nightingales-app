@@ -124,3 +124,39 @@ export const getTeamInvoices = async (req: Request, res: Response) => {
     res.status(500).json({ error: 'Failed to fetch invoices' });
   }
 };
+
+export const getPatients = async (req: Request, res: Response) => {
+  try {
+    const where: any = {};
+    if (req.user?.role === 'TEAM_LEAD' && req.user.team_id) {
+      where.customer = { team_id: req.user.team_id };
+    }
+    
+    const patients = await prisma.patient.findMany({
+      where,
+      include: { customer: { select: { full_name: true, phone: true } } },
+      orderBy: { created_at: 'desc' }
+    });
+    res.json(patients);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to fetch patients' });
+  }
+};
+
+export const getEnquiries = async (req: Request, res: Response) => {
+  try {
+    const where: any = {};
+    if (req.user?.role === 'TEAM_LEAD' && req.user.team_id) {
+      where.assigned_team_id = req.user.team_id;
+    }
+    
+    const enquiries = await prisma.enquiry.findMany({
+      where,
+      include: { assigned_team: { select: { name: true } } },
+      orderBy: { created_at: 'desc' }
+    });
+    res.json(enquiries);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to fetch enquiries' });
+  }
+};
