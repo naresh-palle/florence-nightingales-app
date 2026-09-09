@@ -108,11 +108,11 @@ const OverviewTab = ({ token, onLogout, navigation }) => {
           <TouchableOpacity style={[s.card, { flex: 1, alignItems: 'center', backgroundColor: '#f0fff4' }]} onPress={() => navigation.navigate('Finance')}>
             <Text style={{ fontSize: 28 }}>✅</Text>
             <Text style={s.muted}>Fully Paid</Text>
-          </View>
+          </TouchableOpacity>
           <TouchableOpacity style={[s.card, { flex: 1, alignItems: 'center', backgroundColor: '#fffff0' }]} onPress={() => navigation.navigate('Finance')}>
             <Text style={{ fontSize: 28 }}>⏳</Text>
             <Text style={s.muted}>Pending/Partial</Text>
-          </View>
+          </TouchableOpacity>
           <TouchableOpacity style={[s.card, { flex: 1, alignItems: 'center', backgroundColor: '#fff5f5' }]} onPress={() => navigation.navigate('Finance')}>
             <Text style={{ fontSize: 28 }}>🚨</Text>
             <Text style={s.muted}>Overdue</Text>
