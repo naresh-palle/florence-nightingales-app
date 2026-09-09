@@ -19,12 +19,19 @@ function useFetch(url, token) {
   return { data, loading, refreshing, onRefresh: () => load(true) };
 }
 
-const DashHeader = ({ title, subtitle }) => (
+const DashHeader = ({ title, subtitle, onLogout }) => (
   <ImageBackground source={require('../../assets/dashboard_header.jpg')} style={hdr.wrap} resizeMode="cover">
     <View style={[hdr.overlay, { backgroundColor: '#1a5c2eCC' }]} />
-    <View style={hdr.inner}>
-      <Text style={hdr.title}>{title}</Text>
-      {subtitle ? <Text style={hdr.sub}>{subtitle}</Text> : null}
+    <View style={[hdr.inner, { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end' }]}>
+      <View>
+        <Text style={hdr.title}>{title}</Text>
+        {subtitle ? <Text style={hdr.sub}>{subtitle}</Text> : null}
+      </View>
+      {onLogout && (
+        <TouchableOpacity style={{ backgroundColor: 'rgba(0,0,0,0.3)', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 16 }} onPress={onLogout}>
+          <Text style={{ color: '#fff', fontSize: 12, fontWeight: '700' }}>Sign Out</Text>
+        </TouchableOpacity>
+      )}
     </View>
   </ImageBackground>
 );
@@ -41,7 +48,7 @@ const Empty = ({ msg }) => <View style={s.emptyWrap}><Text style={{ fontSize: 48
 const Divider = () => <View style={{ height: 1, backgroundColor: '#edf2f7', marginHorizontal: 16 }} />;
 
 // ── SHIFTS ────────────────────────────────────────────────────────────────────
-const ShiftsTab = ({ token }) => {
+const ShiftsTab = ({ token, onLogout }) => {
   const { data, loading, refreshing, onRefresh } = useFetch(`${API}/api/operations/shifts`, token);
   if (loading) return <Loading />;
   const items = Array.isArray(data) ? data : [];
@@ -67,13 +74,13 @@ const ShiftsTab = ({ token }) => {
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
       ListHeaderComponent={() => (
         <>
-          <DashHeader title="My Shifts" subtitle="Today's care schedule" />
+          <DashHeader title="My Shifts" subtitle="Today's care schedule" onLogout={onLogout} />
           <View style={s.body}><Text style={s.sectionTitle}>Upcoming & Active Shifts ({items.length})</Text></View>
         </>
       )}
       ListEmptyComponent={<Empty msg="No shifts scheduled for you right now" />}
       renderItem={({ item }) => (
-        <View style={[s.rowCard, { alignItems: 'flex-start' }]}>
+        <TouchableOpacity style={[s.rowCard, { alignItems: "flex-start" }]} onPress={() => alert("Detailed view coming soon")}>
           <View style={[s.timeBox]}>
             <Text style={s.timeText}>{item.start_time || '--'}</Text>
             <Text style={s.timeSep}>│</Text>
@@ -105,7 +112,7 @@ const ShiftsTab = ({ token }) => {
 };
 
 // ── TASKS ─────────────────────────────────────────────────────────────────────
-const TasksTab = ({ token }) => {
+const TasksTab = ({ token, onLogout }) => {
   const { data, loading, refreshing, onRefresh } = useFetch(`${API}/api/operations/tasks`, token);
   if (loading) return <Loading />;
   const tasks = Array.isArray(data) ? data : [];
@@ -119,7 +126,7 @@ const TasksTab = ({ token }) => {
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
       ListHeaderComponent={() => (
         <>
-          <DashHeader title="My Tasks" subtitle="Pending work items" />
+          <DashHeader title="My Tasks" subtitle="Pending work items" onLogout={onLogout} />
           <View style={s.body}>
             {highCount > 0 && (
               <View style={[s.card, { backgroundColor: '#fff5f5', borderLeftWidth: 4, borderLeftColor: '#c53030', flexDirection: 'row', alignItems: 'center' }]}>
@@ -156,7 +163,7 @@ const TasksTab = ({ token }) => {
 };
 
 // ── HELPDESK / INCIDENTS ──────────────────────────────────────────────────────
-const HelpdeskTab = ({ token }) => {
+const HelpdeskTab = ({ token, onLogout }) => {
   const { data, loading, refreshing, onRefresh } = useFetch(`${API}/api/operations/incidents`, token);
   if (loading) return <Loading />;
   const incidents = Array.isArray(data) ? data : [];
@@ -188,7 +195,7 @@ const HelpdeskTab = ({ token }) => {
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
       ListHeaderComponent={() => (
         <>
-          <DashHeader title="Helpdesk" subtitle="Report issues & get support" />
+          <DashHeader title="Helpdesk" subtitle="Report issues & get support" onLogout={onLogout} />
           <View style={s.body}>
             <TouchableOpacity style={[s.btn, { backgroundColor: '#c53030', marginBottom: 16 }]} onPress={handleReport}>
               <Text style={s.btnText}>🚨 Report New Incident</Text>
@@ -201,7 +208,7 @@ const HelpdeskTab = ({ token }) => {
       renderItem={({ item }) => {
         const severityConfig = { CRITICAL: '🔴', HIGH: '🟠', MEDIUM: '🟡', LOW: '🟢' };
         return (
-          <View style={[s.rowCard, { alignItems: 'flex-start' }]}>
+          <TouchableOpacity style={[s.rowCard, { alignItems: "flex-start" }]} onPress={() => alert("Detailed view coming soon")}>
             <Text style={{ fontSize: 24, marginRight: 12 }}>{severityConfig[item.severity] || '⚪'}</Text>
             <View style={{ flex: 1 }}>
               <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
@@ -220,7 +227,7 @@ const HelpdeskTab = ({ token }) => {
 };
 
 // ── ATTENDANCE ────────────────────────────────────────────────────────────────
-const AttendanceTab = ({ token }) => {
+const AttendanceTab = ({ token, onLogout }) => {
   const { data, loading, refreshing, onRefresh } = useFetch(`${API}/api/operations/attendance`, token);
   if (loading) return <Loading />;
   const records = Array.isArray(data) ? data : [];
@@ -234,7 +241,7 @@ const AttendanceTab = ({ token }) => {
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
       ListHeaderComponent={() => (
         <>
-          <DashHeader title="Attendance" subtitle="Your work hour history" />
+          <DashHeader title="Attendance" subtitle="Your work hour history" onLogout={onLogout} />
           <View style={s.body}>
             <View style={[s.card, { backgroundColor: '#f0fff4', borderLeftWidth: 4, borderLeftColor: '#38a169', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }]}>
               <View>
@@ -253,7 +260,7 @@ const AttendanceTab = ({ token }) => {
         const checkOut = item.check_out ? new Date(item.check_out).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }) : '—';
         const hours = item.check_in && item.check_out ? Math.round((new Date(item.check_out) - new Date(item.check_in)) / 3600000 * 10) / 10 : null;
         return (
-          <View style={s.rowCard}>
+          <TouchableOpacity style={s.rowCard} onPress={() => alert("Detailed view coming soon")}>
             <View style={[s.avatar, { backgroundColor: '#c6f6d5' }]}>
               <Text style={s.avatarText}>✅</Text>
             </View>
@@ -274,7 +281,7 @@ const AttendanceTab = ({ token }) => {
 };
 
 // ── PROFILE ───────────────────────────────────────────────────────────────────
-const ProfileTab = ({ token }) => {
+const ProfileTab = ({ token, onLogout }) => {
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   useEffect(() => {
@@ -294,7 +301,7 @@ const ProfileTab = ({ token }) => {
   ];
   return (
     <ScrollView style={s.screen}>
-      <DashHeader title="My Profile" subtitle="Account information" />
+      <DashHeader title="My Profile" subtitle="Account information" onLogout={onLogout} />
       <View style={s.body}>
         <View style={[s.card, { alignItems: 'center', paddingVertical: 28, backgroundColor: '#f0fff4' }]}>
           <View style={{ width: 80, height: 80, borderRadius: 40, backgroundColor: '#38a169', justifyContent: 'center', alignItems: 'center', marginBottom: 14 }}>
@@ -346,7 +353,7 @@ const ProfileTab = ({ token }) => {
           <>
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 16, marginBottom: 12 }}>
               <Text style={s.sectionTitle}>Recent Leave Requests</Text>
-              <TouchableOpacity style={{ backgroundColor: '#edf2f7', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 6 }}>
+              <TouchableOpacity style={{ backgroundColor: '#edf2f7', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 6 }} onPress={() => alert('Leave Request Form Coming Soon')}>
                 <Text style={{ fontSize: 12, fontWeight: '700', color: '#4a5568' }}>+ New Leave</Text>
               </TouchableOpacity>
             </View>
@@ -362,12 +369,16 @@ const ProfileTab = ({ token }) => {
             ))}
           </>
         )}
+        
+        <TouchableOpacity style={[s.btn, { marginTop: 24, backgroundColor: '#c53030' }]} onPress={onLogout}>
+          <Text style={s.btnText}>Sign Out</Text>
+        </TouchableOpacity>
       </View>
     </ScrollView>
   );
 };
 
-export default function EmployeeDashboard({ token }) {
+export default function EmployeeDashboard({ token, onLogout }) {
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
@@ -386,7 +397,7 @@ export default function EmployeeDashboard({ token }) {
       <Tab.Screen name="Tasks">{() => <TasksTab token={token} />}</Tab.Screen>
       <Tab.Screen name="Helpdesk">{() => <HelpdeskTab token={token} />}</Tab.Screen>
       <Tab.Screen name="Attendance">{() => <AttendanceTab token={token} />}</Tab.Screen>
-      <Tab.Screen name="Profile">{() => <ProfileTab token={token} />}</Tab.Screen>
+      <Tab.Screen name="Profile">{() => <ProfileTab token={token} onLogout={onLogout} />}</Tab.Screen>
     </Tab.Navigator>
   );
 }

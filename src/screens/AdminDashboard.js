@@ -23,12 +23,19 @@ function useFetch(url, token) {
   return { data, loading, error, refreshing, onRefresh: () => load(true) };
 }
 
-const DashHeader = ({ title, subtitle, color1 = '#1a365d', color2 = '#2c5282' }) => (
+const DashHeader = ({ title, subtitle, color1 = '#1a365d', color2 = '#2c5282', onLogout }) => (
   <ImageBackground source={require('../../assets/dashboard_header.jpg')} style={[hdr.wrap]} resizeMode="cover">
     <View style={[hdr.overlay, { backgroundColor: color1 + 'CC' }]} />
-    <View style={hdr.inner}>
-      <Text style={hdr.title}>{title}</Text>
-      {subtitle ? <Text style={hdr.sub}>{subtitle}</Text> : null}
+    <View style={[hdr.inner, { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end' }]}>
+      <View>
+        <Text style={hdr.title}>{title}</Text>
+        {subtitle ? <Text style={hdr.sub}>{subtitle}</Text> : null}
+      </View>
+      {onLogout && (
+        <TouchableOpacity style={{ backgroundColor: 'rgba(0,0,0,0.3)', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 16 }} onPress={onLogout}>
+          <Text style={{ color: '#fff', fontSize: 12, fontWeight: '700' }}>Sign Out</Text>
+        </TouchableOpacity>
+      )}
     </View>
   </ImageBackground>
 );
@@ -61,7 +68,7 @@ const StatusBadge = ({ label }) => {
 const SeparatorLine = () => <View style={{ height: 1, backgroundColor: '#edf2f7', marginHorizontal: 16 }} />;
 
 // ── OVERVIEW ──────────────────────────────────────────────────────────────────
-const OverviewTab = ({ token }) => {
+const OverviewTab = ({ token, onLogout }) => {
   const { data: stats, loading } = useFetch(`${API}/api/admin/stats`, token);
   const statItems = [
     { icon: '👥', label: 'Active Users', value: stats?.totalUsers, color: '#3182ce' },
@@ -117,7 +124,7 @@ const OverviewTab = ({ token }) => {
 };
 
 // ── TEAMS ─────────────────────────────────────────────────────────────────────
-const TeamsTab = ({ token }) => {
+const TeamsTab = ({ token, onLogout }) => {
   const { data, loading, refreshing, onRefresh } = useFetch(`${API}/api/admin/team-leads`, token);
   const { data: allUsers, loading: usersLoading } = useFetch(`${API}/api/operations/employees`, token);
 
@@ -131,7 +138,7 @@ const TeamsTab = ({ token }) => {
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
       ListHeaderComponent={() => (
         <>
-          <DashHeader title="Team Directory" subtitle="All users across the organization" color1="#1a365d" />
+          <DashHeader title="Team Directory" subtitle="All users across the organization" color1="#1a365d" onLogout={onLogout} />
           <View style={s.body}>
             <Text style={s.sectionTitle}>All Personnel ({Array.isArray(allUsers) ? allUsers.length : 0})</Text>
           </View>
@@ -157,7 +164,7 @@ const TeamsTab = ({ token }) => {
 };
 
 // ── FINANCIALS ────────────────────────────────────────────────────────────────
-const FinanceTab = ({ token }) => {
+const FinanceTab = ({ token, onLogout }) => {
   const { data, loading, refreshing, onRefresh } = useFetch(`${API}/api/admin/invoices`, token);
   if (loading) return <Loading color="#c53030" />;
   const invoices = Array.isArray(data) ? data : [];
@@ -174,7 +181,7 @@ const FinanceTab = ({ token }) => {
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
       ListHeaderComponent={() => (
         <>
-          <DashHeader title="Financial Management" subtitle="Invoices, collections & outstanding" color1="#1a3a1a" />
+          <DashHeader title="Financial Management" subtitle="Invoices, collections & outstanding" color1="#1a3a1a" onLogout={onLogout} />
           <View style={s.body}>
             <View style={{ flexDirection: 'row', gap: 10, marginBottom: 16 }}>
               <View style={[s.card, { flex: 1, backgroundColor: '#f0fff4' }]}>
@@ -196,7 +203,7 @@ const FinanceTab = ({ token }) => {
         const outstanding = Number(item.total_amount) - paid;
         const pct = Math.round((paid / Number(item.total_amount)) * 100);
         return (
-          <View style={s.invoiceCard}>
+          <TouchableOpacity style={s.invoiceCard} onPress={() => alert("Detailed view coming soon")}>
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
               <View style={{ flex: 1 }}>
                 <Text style={s.name}>{item.customer?.full_name}</Text>
@@ -222,7 +229,7 @@ const FinanceTab = ({ token }) => {
 };
 
 // ── AUDIT LOGS ────────────────────────────────────────────────────────────────
-const AuditTab = ({ token }) => {
+const AuditTab = ({ token, onLogout }) => {
   const { data, loading, refreshing, onRefresh } = useFetch(`${API}/api/admin/audit-logs`, token);
   if (loading) return <Loading color="#c53030" />;
   return (
@@ -234,7 +241,7 @@ const AuditTab = ({ token }) => {
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
       ListHeaderComponent={() => (
         <>
-          <DashHeader title="Security Audit Logs" subtitle="All sensitive system actions recorded" color1="#2d2d2d" />
+          <DashHeader title="Security Audit Logs" subtitle="All sensitive system actions recorded" color1="#2d2d2d" onLogout={onLogout} />
           <View style={s.body}><Text style={s.sectionTitle}>Recent Activity</Text></View>
         </>
       )}
@@ -259,7 +266,7 @@ const AuditTab = ({ token }) => {
 };
 
 // ── MAIN ──────────────────────────────────────────────────────────────────────
-export default function AdminDashboard({ token }) {
+export default function AdminDashboard({ token, onLogout }) {
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({

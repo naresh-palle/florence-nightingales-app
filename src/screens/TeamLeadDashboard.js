@@ -19,12 +19,19 @@ function useFetch(url, token) {
   return { data, loading, refreshing, onRefresh: () => load(true) };
 }
 
-const DashHeader = ({ title, subtitle }) => (
+const DashHeader = ({ title, subtitle, onLogout }) => (
   <ImageBackground source={require('../../assets/dashboard_header.jpg')} style={hdr.wrap} resizeMode="cover">
-    <View style={[hdr.overlay, { backgroundColor: '#1a4a6bCC' }]} />
-    <View style={hdr.inner}>
-      <Text style={hdr.title}>{title}</Text>
-      {subtitle ? <Text style={hdr.sub}>{subtitle}</Text> : null}
+    <View style={[hdr.overlay, { backgroundColor: '#2b6cb0CC' }]} />
+    <View style={[hdr.inner, { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end' }]}>
+      <View>
+        <Text style={hdr.title}>{title}</Text>
+        {subtitle ? <Text style={hdr.sub}>{subtitle}</Text> : null}
+      </View>
+      {onLogout && (
+        <TouchableOpacity style={{ backgroundColor: 'rgba(0,0,0,0.3)', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 16 }} onPress={onLogout}>
+          <Text style={{ color: '#fff', fontSize: 12, fontWeight: '700' }}>Sign Out</Text>
+        </TouchableOpacity>
+      )}
     </View>
   </ImageBackground>
 );
@@ -41,7 +48,7 @@ const Empty = ({ msg }) => <View style={s.emptyWrap}><Text style={{ fontSize: 48
 const Divider = () => <View style={{ height: 1, backgroundColor: '#edf2f7', marginHorizontal: 16 }} />;
 
 // ── PATIENTS ─────────────────────────────────────────────────────────────────
-const PatientsTab = ({ token }) => {
+const PatientsTab = ({ token, onLogout }) => {
   const { data, loading, refreshing, onRefresh } = useFetch(`${API}/api/operations/patients`, token);
   if (loading) return <Loading />;
   const patients = Array.isArray(data) ? data : [];
@@ -60,7 +67,7 @@ const PatientsTab = ({ token }) => {
       )}
       ListEmptyComponent={<Empty msg="No patients assigned to your team" />}
       renderItem={({ item }) => (
-        <View style={s.rowCard}>
+        <TouchableOpacity style={s.rowCard} onPress={() => alert("Detailed view coming soon")}>
           <View style={[s.avatar, { backgroundColor: '#bee3f8' }]}>
             <Text style={s.avatarText}>{item.full_name?.charAt(0)}</Text>
           </View>
@@ -79,7 +86,7 @@ const PatientsTab = ({ token }) => {
 };
 
 // ── ENQUIRIES ─────────────────────────────────────────────────────────────────
-const EnquiriesTab = ({ token }) => {
+const EnquiriesTab = ({ token, onLogout }) => {
   const { data, loading, refreshing, onRefresh } = useFetch(`${API}/api/operations/enquiries`, token);
   if (loading) return <Loading />;
   const enquiries = Array.isArray(data) ? data : [];
@@ -98,7 +105,7 @@ const EnquiriesTab = ({ token }) => {
       )}
       ListEmptyComponent={<Empty msg="No pending enquiries" />}
       renderItem={({ item }) => (
-        <View style={s.rowCard}>
+        <TouchableOpacity style={s.rowCard} onPress={() => alert("Detailed view coming soon")}>
           <Text style={{ fontSize: 24, marginRight: 12 }}>📋</Text>
           <View style={{ flex: 1 }}>
             <Text style={s.name}>{item.customer_name}</Text>
@@ -114,7 +121,7 @@ const EnquiriesTab = ({ token }) => {
 };
 
 // ── STAFF ─────────────────────────────────────────────────────────────────────
-const StaffTab = ({ token }) => {
+const StaffTab = ({ token, onLogout }) => {
   const { data, loading, refreshing, onRefresh } = useFetch(`${API}/api/operations/employees`, token);
   if (loading) return <Loading />;
   const staff = Array.isArray(data) ? data : [];
@@ -133,7 +140,7 @@ const StaffTab = ({ token }) => {
       )}
       ListEmptyComponent={<Empty msg="No staff in your team" />}
       renderItem={({ item }) => (
-        <View style={s.rowCard}>
+        <TouchableOpacity style={s.rowCard} onPress={() => alert("Detailed view coming soon")}>
           <View style={[s.avatar, { backgroundColor: '#c6f6d5' }]}>
             <Text style={s.avatarText}>{item.full_name?.charAt(0)}</Text>
           </View>
@@ -152,7 +159,7 @@ const StaffTab = ({ token }) => {
 };
 
 // ── ASSIGNMENTS ───────────────────────────────────────────────────────────────
-const AssignmentsTab = ({ token }) => {
+const AssignmentsTab = ({ token, onLogout }) => {
   const { data, loading, refreshing, onRefresh } = useFetch(`${API}/api/operations/assignments`, token);
   if (loading) return <Loading />;
   const items = Array.isArray(data) ? data : [];
@@ -165,13 +172,13 @@ const AssignmentsTab = ({ token }) => {
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
       ListHeaderComponent={() => (
         <>
-          <DashHeader title="Care Assignments" subtitle="Active patient-staff pairings" />
+          <DashHeader title="Care Assignments" subtitle="Active patient-staff pairings" onLogout={onLogout} />
           <View style={s.body}><Text style={s.sectionTitle}>Active Assignments ({items.length})</Text></View>
         </>
       )}
       ListEmptyComponent={<Empty msg="No assignments yet" />}
       renderItem={({ item }) => (
-        <View style={[s.rowCard, { alignItems: 'flex-start' }]}>
+        <TouchableOpacity style={[s.rowCard, { alignItems: "flex-start" }]} onPress={() => alert("Detailed view coming soon")}>
           <Text style={{ fontSize: 28, marginRight: 12 }}>🏥</Text>
           <View style={{ flex: 1 }}>
             <Text style={s.name}>{item.patient?.full_name || item.customer?.full_name}</Text>
@@ -189,7 +196,7 @@ const AssignmentsTab = ({ token }) => {
 };
 
 // ── PAYMENTS ──────────────────────────────────────────────────────────────────
-const PaymentsTab = ({ token }) => {
+const PaymentsTab = ({ token, onLogout }) => {
   const { data, loading, refreshing, onRefresh } = useFetch(`${API}/api/operations/invoices`, token);
   if (loading) return <Loading />;
   const invoices = Array.isArray(data) ? data : [];
@@ -231,7 +238,7 @@ const PaymentsTab = ({ token }) => {
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
       ListHeaderComponent={() => (
         <>
-          <DashHeader title="Payment Collections" subtitle="Team invoice & collection status" />
+          <DashHeader title="Payment Collections" subtitle="Team invoice & collection status" onLogout={onLogout} />
           <View style={s.body}>
             <View style={[s.card, { backgroundColor: '#fff5f5', borderLeftWidth: 4, borderLeftColor: '#c53030' }]}>
               <Text style={s.muted}>Total Outstanding (My Team)</Text>
@@ -282,7 +289,7 @@ const PaymentsTab = ({ token }) => {
 };
 
 // ── QUOTES ────────────────────────────────────────────────────────────────────
-const QuotesTab = ({ token }) => {
+const QuotesTab = ({ token, onLogout }) => {
   const { data, loading, refreshing, onRefresh } = useFetch(`${API}/api/operations/quotations`, token);
   if (loading) return <Loading />;
   const quotes = Array.isArray(data) ? data : [];
@@ -308,13 +315,13 @@ const QuotesTab = ({ token }) => {
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
       ListHeaderComponent={() => (
         <>
-          <DashHeader title="Quotations" subtitle="Price quotes sent to leads" />
+          <DashHeader title="Quotations" subtitle="Price quotes sent to leads" onLogout={onLogout} />
           <View style={s.body}><Text style={s.sectionTitle}>Active Quotes</Text></View>
         </>
       )}
       ListEmptyComponent={<Empty msg="No quotations generated yet" />}
       renderItem={({ item }) => (
-        <View style={s.invoiceCard}>
+        <TouchableOpacity style={s.invoiceCard} onPress={() => alert("Detailed view coming soon")}>
           <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
             <Text style={s.name}>{item.enquiry?.customer_name}</Text>
             <StatusBadge label={item.status} />
@@ -346,7 +353,7 @@ const QuotesTab = ({ token }) => {
 };
 
 // ── SCHEDULE & REPLACEMENTS ───────────────────────────────────────────────────
-const ScheduleTab = ({ token }) => {
+const ScheduleTab = ({ token, onLogout }) => {
   const { data, loading, refreshing, onRefresh } = useFetch(`${API}/api/operations/shifts`, token);
   if (loading) return <Loading />;
   const shifts = Array.isArray(data) ? data : [];
@@ -382,13 +389,13 @@ const ScheduleTab = ({ token }) => {
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
       ListHeaderComponent={() => (
         <>
-          <DashHeader title="Team Schedule" subtitle="Manage shifts and replacements" />
+          <DashHeader title="Team Schedule" subtitle="Manage shifts and replacements" onLogout={onLogout} />
           <View style={s.body}><Text style={s.sectionTitle}>Upcoming Shifts ({shifts.length})</Text></View>
         </>
       )}
       ListEmptyComponent={<Empty msg="No scheduled shifts for your team" />}
       renderItem={({ item }) => (
-        <View style={s.invoiceCard}>
+        <TouchableOpacity style={s.invoiceCard} onPress={() => alert("Detailed view coming soon")}>
           <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
             <Text style={s.name}>{item.employee?.full_name}</Text>
             <StatusBadge label={item.status} />
@@ -409,7 +416,7 @@ const ScheduleTab = ({ token }) => {
 };
 
 // ── INCIDENTS ──────────────────────────────────────────────────────────────────
-const IncidentsTab = ({ token }) => {
+const IncidentsTab = ({ token, onLogout }) => {
   const { data, loading, refreshing, onRefresh } = useFetch(`${API}/api/operations/incidents`, token);
   if (loading) return <Loading />;
   const incidents = Array.isArray(data) ? data : [];
@@ -423,7 +430,7 @@ const IncidentsTab = ({ token }) => {
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
       ListHeaderComponent={() => (
         <>
-          <DashHeader title="Helpdesk" subtitle="Incidents reported by your team" />
+          <DashHeader title="Helpdesk" subtitle="Incidents reported by your team" onLogout={onLogout} />
           <View style={s.body}><Text style={s.sectionTitle}>Active Tickets ({incidents.length})</Text></View>
         </>
       )}
@@ -431,7 +438,7 @@ const IncidentsTab = ({ token }) => {
       renderItem={({ item }) => {
         const severityConfig = { CRITICAL: '🔴', HIGH: '🟠', MEDIUM: '🟡', LOW: '🟢' };
         return (
-          <View style={[s.rowCard, { alignItems: 'flex-start' }]}>
+          <TouchableOpacity style={[s.rowCard, { alignItems: "flex-start" }]} onPress={() => alert("Detailed view coming soon")}>
             <Text style={{ fontSize: 24, marginRight: 12 }}>{severityConfig[item.severity] || '⚪'}</Text>
             <View style={{ flex: 1 }}>
               <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
@@ -454,7 +461,7 @@ const IncidentsTab = ({ token }) => {
   );
 };
 
-export default function TeamLeadDashboard({ token }) {
+export default function TeamLeadDashboard({ token, onLogout }) {
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
@@ -469,11 +476,11 @@ export default function TeamLeadDashboard({ token }) {
         }
       })}
     >
-      <Tab.Screen name="Enquiries">{() => <EnquiriesTab token={token} />}</Tab.Screen>
-      <Tab.Screen name="Patients">{() => <PatientsTab token={token} />}</Tab.Screen>
-      <Tab.Screen name="Schedule">{() => <ScheduleTab token={token} />}</Tab.Screen>
-      <Tab.Screen name="Payments">{() => <PaymentsTab token={token} />}</Tab.Screen>
-      <Tab.Screen name="Helpdesk">{() => <IncidentsTab token={token} />}</Tab.Screen>
+      <Tab.Screen name="Enquiries">{() => <EnquiriesTab token={token} onLogout={onLogout} />}</Tab.Screen>
+      <Tab.Screen name="Patients">{() => <PatientsTab token={token} onLogout={onLogout} />}</Tab.Screen>
+      <Tab.Screen name="Schedule">{() => <ScheduleTab token={token} onLogout={onLogout} />}</Tab.Screen>
+      <Tab.Screen name="Payments">{() => <PaymentsTab token={token} onLogout={onLogout} />}</Tab.Screen>
+      <Tab.Screen name="Helpdesk">{() => <IncidentsTab token={token} onLogout={onLogout} />}</Tab.Screen>
     </Tab.Navigator>
   );
 }
