@@ -135,6 +135,12 @@ model User {
   reminders_sent    PaymentReminder[] @relation("SentBy")
   audit_logs_actor  AuditLog[]        @relation("Actor")
 
+  // HR Reverse relations
+  documents       EmployeeDocument[]
+  certifications  Certification[]
+  leave_requests  LeaveRequest[]
+  approved_leaves LeaveRequest[]     @relation("ApprovedLeaves")
+
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
 }
@@ -356,6 +362,51 @@ model PaymentReminder {
   invoice     Invoice  @relation(fields: [invoice_id], references: [id])
   sender_id   String
   sender      User     @relation("SentBy", fields: [sender_id], references: [id])
+}
+
+// ── HR & EMPLOYEE MANAGEMENT ─────────────────────────────────────────────────
+
+model EmployeeDocument {
+  id            String    @id @default(uuid())
+  document_type String
+  document_url  String
+  is_verified   Boolean   @default(false)
+  expiry_date   DateTime?
+
+  employee_id String
+  employee    User   @relation(fields: [employee_id], references: [id])
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+}
+
+model Certification {
+  id                String    @id @default(uuid())
+  name              String
+  issuing_authority String
+  issue_date        DateTime
+  expiry_date       DateTime?
+  credential_id     String?
+
+  employee_id String
+  employee    User   @relation(fields: [employee_id], references: [id])
+}
+
+model LeaveRequest {
+  id         String   @id @default(uuid())
+  leave_type String
+  start_date DateTime
+  end_date   DateTime
+  reason     String
+  status     String   @default("PENDING")
+
+  employee_id    String
+  employee       User    @relation(fields: [employee_id], references: [id])
+  approved_by_id String?
+  approved_by    User?   @relation("ApprovedLeaves", fields: [approved_by_id], references: [id])
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
 }
 
 // ── SYSTEM ───────────────────────────────────────────────────────────────────
