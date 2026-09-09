@@ -79,7 +79,7 @@ const OverviewTab = ({ token, onLogout }) => {
   if (loading) return <Loading color="#c53030" />;
   return (
     <ScrollView style={s.screen}>
-      <DashHeader title="Admin Overview" subtitle="Florence Nightingales Operations" color1="#7b0000" color2="#c53030" />
+      <DashHeader title="Admin Overview" subtitle="Florence Nightingales Operations" color1="#7b0000" color2="#c53030" onLogout={onLogout} />
       <View style={s.body}>
         <Text style={s.sectionTitle}>Key Metrics</Text>
         <View style={s.grid}>
@@ -146,7 +146,7 @@ const TeamsTab = ({ token, onLogout }) => {
       )}
       ListEmptyComponent={<Empty msg="No users found" />}
       renderItem={({ item }) => (
-        <View style={[s.rowCard]}>
+        <TouchableOpacity style={[s.rowCard]} onPress={() => alert("Detailed view coming soon")}>
           <View style={[s.avatar, { backgroundColor: item.role === 'ADMIN' ? '#fed7d7' : item.role === 'TEAM_LEAD' ? '#bee3f8' : '#c6f6d5' }]}>
             <Text style={s.avatarText}>{item.full_name?.charAt(0)}</Text>
           </View>
@@ -156,7 +156,7 @@ const TeamsTab = ({ token, onLogout }) => {
             {item.designation && <Text style={s.muted}>🏷️ {item.designation}</Text>}
           </View>
           <StatusBadge label={item.role === 'ADMIN' ? 'ADMIN' : item.role === 'TEAM_LEAD' ? 'LEAD' : 'STAFF'} />
-        </View>
+        </TouchableOpacity>
       )}
       contentContainerStyle={{ paddingBottom: 40 }}
     />
@@ -249,7 +249,7 @@ const AuditTab = ({ token, onLogout }) => {
       renderItem={({ item }) => {
         const isSuccess = item.result === 'SUCCESS';
         return (
-          <View style={[s.rowCard, { borderLeftWidth: 3, borderLeftColor: isSuccess ? '#38a169' : '#c53030' }]}>
+          <TouchableOpacity style={[s.rowCard, { borderLeftWidth: 3, borderLeftColor: isSuccess ? '#38a169' : '#c53030' }]} onPress={() => alert("Detailed view coming soon")}>
             <Text style={{ fontSize: 24, marginRight: 12 }}>{isSuccess ? '✅' : '❌'}</Text>
             <View style={{ flex: 1 }}>
               <Text style={s.name}>{item.action.replace(/_/g, ' ')}</Text>
@@ -257,7 +257,7 @@ const AuditTab = ({ token, onLogout }) => {
               <Text style={s.muted}>🕒 {new Date(item.timestamp).toLocaleString('en-IN')}</Text>
             </View>
             <StatusBadge label={item.result} />
-          </View>
+          </TouchableOpacity>
         );
       }}
       contentContainerStyle={{ paddingBottom: 40 }}
@@ -281,10 +281,10 @@ export default function AdminDashboard({ token, onLogout }) {
         }
       })}
     >
-      <Tab.Screen name="Overview">{() => <OverviewTab token={token} />}</Tab.Screen>
-      <Tab.Screen name="Teams">{() => <TeamsTab token={token} />}</Tab.Screen>
-      <Tab.Screen name="Finance">{() => <FinanceTab token={token} />}</Tab.Screen>
-      <Tab.Screen name="Audit" options={{ title: 'Audit' }}>{() => <AuditTab token={token} />}</Tab.Screen>
+      <Tab.Screen name="Overview">{() => <OverviewTab token={token} onLogout={onLogout} />}</Tab.Screen>
+      <Tab.Screen name="Teams">{() => <TeamsTab token={token} onLogout={onLogout} />}</Tab.Screen>
+      <Tab.Screen name="Finance">{() => <FinanceTab token={token} onLogout={onLogout} />}</Tab.Screen>
+      <Tab.Screen name="Audit" options={{ title: 'Audit' }}>{() => <AuditTab token={token} onLogout={onLogout} />}</Tab.Screen>
     </Tab.Navigator>
   );
 }
