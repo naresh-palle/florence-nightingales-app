@@ -254,6 +254,26 @@ async function main() {
   }
   console.log('✅ Attendance records created');
 
+  // ── HR Data (Documents, Certifications, Leaves) ───────────────────────────
+  const docExists = await prisma.employeeDocument.findFirst({ where: { employee_id: staff1.id } });
+  if (!docExists) {
+    await prisma.employeeDocument.create({
+      data: { document_type: 'Nursing License', document_url: 'https://storage.fn.com/docs/lic_123.pdf', is_verified: true, expiry_date: new Date('2028-12-31'), employee_id: staff1.id }
+    });
+    await prisma.employeeDocument.create({
+      data: { document_type: 'Aadhar Card', document_url: 'https://storage.fn.com/docs/aadhar_123.pdf', is_verified: true, employee_id: staff1.id }
+    });
+
+    await prisma.certification.create({
+      data: { name: 'Basic Life Support (BLS)', issuing_authority: 'Indian Medical Association', issue_date: new Date('2023-01-10'), expiry_date: new Date('2025-01-10'), credential_id: 'IMA-BLS-900', employee_id: staff1.id }
+    });
+
+    await prisma.leaveRequest.create({
+      data: { leave_type: 'Sick Leave', start_date: new Date('2026-09-15'), end_date: new Date('2026-09-16'), reason: 'Fever and cold', status: 'APPROVED', employee_id: staff1.id, approved_by_id: lead1.id }
+    });
+  }
+  console.log('✅ HR data created');
+
   // ── Audit Logs ─────────────────────────────────────────────────────────────
   const auditEvents = [
     { action: 'LOGIN', entity_type: 'USER', entity_id: admin.id, actor_user_id: admin.id, result: 'SUCCESS' },
