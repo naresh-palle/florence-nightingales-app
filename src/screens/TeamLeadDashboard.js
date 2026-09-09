@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, FlatList, ActivityIndicator, ScrollView, ImageBackground, RefreshControl } from 'react-native';
+import { View, Text, StyleSheet, FlatList, ActivityIndicator, ScrollView, ImageBackground, RefreshControl, TouchableOpacity } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 
 const Tab = createBottomTabNavigator();
@@ -257,6 +257,19 @@ const QuotesTab = ({ token }) => {
   const { data, loading, refreshing, onRefresh } = useFetch(`${API}/api/operations/quotations`, token);
   if (loading) return <Loading />;
   const quotes = Array.isArray(data) ? data : [];
+  
+  const handleAccept = async (id) => {
+    try {
+      await fetch(`${API}/api/finance/quotations/${id}/accept`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      onRefresh();
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
   return (
     <FlatList
       style={s.screen}
@@ -290,6 +303,12 @@ const QuotesTab = ({ token }) => {
               </View>
             ))}
           </View>
+
+          {item.status === 'SENT' && (
+            <TouchableOpacity style={[s.btn, { marginTop: 12 }]} onPress={() => handleAccept(item.id)}>
+              <Text style={s.btnText}>Accept Quote & Convert to Invoice</Text>
+            </TouchableOpacity>
+          )}
         </View>
       )}
       contentContainerStyle={{ paddingBottom: 40 }}
@@ -340,4 +359,6 @@ const s = StyleSheet.create({
   progressFill: { height: 6, borderRadius: 3 },
   emptyWrap: { padding: 40, alignItems: 'center' },
   emptyText: { color: '#718096', textAlign: 'center', marginTop: 8 },
+  btn: { backgroundColor: '#3182ce', padding: 12, borderRadius: 8, alignItems: 'center' },
+  btnText: { color: '#fff', fontWeight: '700', fontSize: 14 }
 });

@@ -132,3 +132,68 @@ export const recordPayment = async (req: Request, res: Response) => {
     res.status(400).json({ error: error.message || 'Payment could not be recorded.' });
   }
 };
+
+// Convert Accepted Quotation to Invoice
+export const acceptQuotation = async (req: Request, res: Response) => {
+  const { quotation_id } = req.params;
+
+  try {
+    const result = await prisma.$transaction(async (tx) => {
+      const quote = await tx.quotation.findUnique({
+        where: { id: quotation_id },
+        include: { enquiry: true, items: true }
+      });
+
+      if (!quote) throw new Error('Quotation not found');
+      if (quote.status === 'ACCEPTED') throw new Error('Quotation is already accepted');
+
+      // Update Quotation Status
+      await tx.quotation.update({
+        where: { id: quotation_id },
+        data: { status: 'ACCEPTED' }
+      });
+
+      // Fetch or Create Customer from Enquiry
+      let customer = await tx.customer.findFirst({
+        where: { phone: quote.enquiry.phone }
+      });
+
+      if (!customer) {
+        customer = await tx.customer.create({
+          data: {
+            full_name: quote.enquiry.customer_name,
+            phone: quote.enquiry.phone,
+            team_id: quote.enquiry.assigned_team_id || '', // Needs valid team
+            status: 'ACTIVE'
+          }
+        });
+      }
+
+      // Generate Invoice
+      const invoiceNumber = `FN-INV-${new Date().getFullYear()}-${crypto.randomBytes(4).toString('hex').toUpperCase()}`;
+      const newInvoice = await tx.invoice.create({
+        data: {
+          invoice_number: invoiceNumber,
+          customer_id: customer.id,
+          service_period_start: new Date(),
+          service_period_end: new Date(new Date().setMonth(new Date().getMonth() + 1)), // Default 1 month
+          billing_date: new Date(),
+          due_date: new Date(new Date().setDate(new Date().getDate() + 7)), // Due in 7 days
+          total_amount: quote.total_amount,
+          status: InvoiceStatus.PENDING,
+          notes: `Generated from Quotation ${quote.quotation_number}`
+        }
+      });
+
+      await tx.auditLog.create({
+        data: { action: 'QUOTATION_ACCEPTED', entity_type: 'QUOTATION', entity_id: quote.id, actor_user_id: req.user?.id, result: 'SUCCESS' }
+      });
+
+      return newInvoice;
+    });
+
+    res.status(200).json({ message: 'Quotation accepted and Invoice created', invoice: result });
+  } catch (error: any) {
+    res.status(400).json({ error: error.message || 'Failed to accept quotation' });
+  }
+};
