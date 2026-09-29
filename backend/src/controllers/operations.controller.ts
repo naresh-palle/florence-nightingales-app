@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
+import { Decimal } from '@prisma/client/runtime/library';
 
 const prisma = new PrismaClient();
 
@@ -430,3 +431,398 @@ export const reassignShift = async (req: Request, res: Response) => {
     res.status(500).json({ error: 'Failed to reassign shift' });
   }
 };
+
+// ── CARE-C WORKFLOW CONTROLLERS ───────────────────────────────────────────────
+
+export const markCareCAttendance = async (req: Request, res: Response) => {
+  const { caregiver_id, client_id, assignment_id, status, billing_rule, date } = req.body;
+  try {
+    const attDate = date ? new Date(date) : new Date();
+    attDate.setHours(0, 0, 0, 0);
+
+    const existing = await prisma.attendance.findFirst({
+      where: { employee_id: caregiver_id, date: attDate }
+    });
+
+    if (existing) {
+      await prisma.attendance.update({
+        where: { id: existing.id },
+        data: {
+          location_data: JSON.stringify({ status, billing_rule, assignment_id, client_id })
+        }
+      });
+    } else {
+      await prisma.attendance.create({
+        data: {
+          employee_id: caregiver_id,
+          date: attDate,
+          check_in: status === 'PRESENT' ? new Date() : null,
+          location_data: JSON.stringify({ status, billing_rule, assignment_id, client_id })
+        }
+      });
+    }
+
+    if (status === 'ABSENT' && billing_rule === 'DEDUCT_FROM_BILL' && assignment_id) {
+      const assignment = await prisma.careAssignment.findUnique({
+        where: { id: assignment_id },
+        include: { customer: true }
+      });
+      if (assignment) {
+        const inv = await prisma.invoice.findFirst({
+          where: { customer_id: assignment.customer_id, status: { in: ['ISSUED', 'PENDING', 'PARTIALLY_PAID'] } },
+          orderBy: { created_at: 'desc' }
+        });
+        if (inv) {
+          const dailyRate = Math.round(Number(inv.total_amount) / 30);
+          const newTotal = Math.max(0, Number(inv.total_amount) - dailyRate);
+          await prisma.invoice.update({
+            where: { id: inv.id },
+            data: {
+              total_amount: new Decimal(newTotal),
+              notes: `${inv.notes || ''} [Absence deduction 1 day: -₹${dailyRate}]`
+            }
+          });
+        }
+      }
+    }
+
+    await prisma.auditLog.create({
+      data: {
+        action: 'ATTENDANCE_MARKED',
+        entity_type: 'ATTENDANCE',
+        entity_id: caregiver_id,
+        actor_user_id: req.user?.id,
+        result: 'SUCCESS',
+        metadata: JSON.stringify({ status, billing_rule, date: attDate })
+      }
+    });
+
+    res.json({ message: 'Attendance recorded successfully', status, billing_rule });
+  } catch (error) {
+    console.error('Attendance mark error:', error);
+    res.status(500).json({ error: 'Failed to record attendance' });
+  }
+};
+
+export const convertEnquiryToClient = async (req: Request, res: Response) => {
+  const { enquiry_id, full_name, phone, email, address, patient_name, patient_age, patient_gender, conditions, family_contact, family_relation, team_id } = req.body;
+  try {
+    const enq = await prisma.enquiry.findUnique({ where: { id: enquiry_id } });
+    if (!enq) return res.status(404).json({ error: 'Enquiry not found' });
+
+    let defaultTeam = await prisma.team.findFirst();
+    const finalTeamId = team_id || enq.assigned_team_id || defaultTeam?.id;
+
+    const customer = await prisma.customer.create({
+      data: {
+        full_name: full_name || enq.customer_name,
+        phone: phone || enq.phone,
+        email: email || enq.email,
+        address: address || enq.location,
+        emergency_contact: family_contact ? `${family_contact} (${family_relation || 'Family'})` : null,
+        service_type: enq.service_required || 'Home Care',
+        customer_number: `CUS-${(phone || enq.phone).slice(-4)}`,
+        status: 'ACTIVE',
+        team_id: finalTeamId!,
+        notes: `Converted from Enquiry #${enq.enquiry_number}`
+      }
+    });
+
+    const patient = await prisma.patient.create({
+      data: {
+        patient_number: `PAT-${(phone || enq.phone).slice(-4)}`,
+        full_name: patient_name || `${customer.full_name} (Patient)`,
+        age: patient_age ? Number(patient_age) : undefined,
+        gender: patient_gender,
+        care_requirements: conditions || enq.notes,
+        address: customer.address,
+        customer_id: customer.id
+      }
+    });
+
+    await prisma.enquiry.update({
+      where: { id: enquiry_id },
+      data: { status: 'CONVERTED' }
+    });
+
+    await prisma.auditLog.create({
+      data: {
+        action: 'ENQUIRY_CONVERTED',
+        entity_type: 'CUSTOMER',
+        entity_id: customer.id,
+        actor_user_id: req.user?.id,
+        result: 'SUCCESS',
+        metadata: JSON.stringify({ enquiry_id, customer_id: customer.id })
+      }
+    });
+
+    res.status(201).json({ message: 'Enquiry converted to client successfully', customer, patient });
+  } catch (error) {
+    console.error('Convert enquiry error:', error);
+    res.status(500).json({ error: 'Failed to convert enquiry to client' });
+  }
+};
+
+export const createCareCPlacement = async (req: Request, res: Response) => {
+  const { customer_id, employee_id, shift_type, client_rate, caregiver_rate, start_date } = req.body;
+  try {
+    const cust = await prisma.customer.findUnique({
+      where: { id: customer_id },
+      include: { patients: true }
+    });
+    if (!cust) return res.status(404).json({ error: 'Customer not found' });
+
+    const startDate = start_date ? new Date(start_date) : new Date();
+    const endDate = new Date(startDate.getTime() + 30 * 86400000);
+    const margin = Number(client_rate) - Number(caregiver_rate);
+    const asgNumber = `PLC-${Date.now().toString().slice(-4)}`;
+
+    const assignment = await prisma.careAssignment.create({
+      data: {
+        assignment_number: asgNumber,
+        customer_id: cust.id,
+        patient_id: cust.patients[0]?.id || null,
+        employee_id,
+        service_type: shift_type || '12h day',
+        start_date: startDate,
+        end_date: endDate,
+        status: 'IN_PROGRESS',
+        team_id: cust.team_id,
+        notes: JSON.stringify({ shift_type, client_rate, caregiver_rate, margin })
+      }
+    });
+
+    const invNumber = `FN-INV-2026-${Date.now().toString().slice(-4)}`;
+    const invoice = await prisma.invoice.create({
+      data: {
+        invoice_number: invNumber,
+        service_period_start: startDate,
+        service_period_end: endDate,
+        billing_date: startDate,
+        due_date: new Date(startDate.getTime() + 7 * 86400000),
+        total_amount: new Decimal(client_rate),
+        status: 'ISSUED',
+        customer_id: cust.id,
+        notes: `Initial invoice for placement ${asgNumber} (${shift_type})`
+      }
+    });
+
+    res.status(201).json({ message: 'Placement created and initial invoice raised', assignment, invoice });
+  } catch (error) {
+    console.error('Create placement error:', error);
+    res.status(500).json({ error: 'Failed to create placement' });
+  }
+};
+
+export const replacePlacementCaregiver = async (req: Request, res: Response) => {
+  const { id } = req.params;
+  const { new_employee_id } = req.body;
+  try {
+    const placement = await prisma.careAssignment.update({
+      where: { id },
+      data: { employee_id: new_employee_id }
+    });
+    res.json({ message: 'Caregiver replaced successfully', placement });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to replace caregiver' });
+  }
+};
+
+export const removePlacementCaregiver = async (req: Request, res: Response) => {
+  const { id } = req.params;
+  const { days_unserved } = req.body;
+  try {
+    const placement = await prisma.careAssignment.findUnique({
+      where: { id },
+      include: { customer: true }
+    });
+    if (!placement) return res.status(404).json({ error: 'Placement not found' });
+
+    await prisma.careAssignment.update({
+      where: { id },
+      data: { employee_id: null, status: 'COMPLETED' }
+    });
+
+    let credit = 0;
+    if (days_unserved) {
+      const inv = await prisma.invoice.findFirst({
+        where: { customer_id: placement.customer_id, status: { in: ['ISSUED', 'PENDING', 'PARTIALLY_PAID'] } },
+        orderBy: { created_at: 'desc' }
+      });
+      if (inv) {
+        credit = Math.round((Number(inv.total_amount) / 30) * Number(days_unserved));
+        const newTotal = Math.max(0, Number(inv.total_amount) - credit);
+        await prisma.invoice.update({
+          where: { id: inv.id },
+          data: {
+            total_amount: new Decimal(newTotal),
+            notes: `${inv.notes || ''} [Pro-rated credit for ${days_unserved} days: -₹${credit}]`
+          }
+        });
+      }
+    }
+
+    res.json({ message: 'Caregiver removed and bill adjusted', pro_rated_credit: credit });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to remove caregiver' });
+  }
+};
+
+export const renewPlacement = async (req: Request, res: Response) => {
+  const { id } = req.params;
+  const { client_rate, caregiver_rate, shift_type } = req.body;
+  try {
+    const current = await prisma.careAssignment.findUnique({
+      where: { id },
+      include: { customer: true }
+    });
+    if (!current) return res.status(404).json({ error: 'Placement not found' });
+
+    const newStart = current.end_date || new Date();
+    const newEnd = new Date(newStart.getTime() + 30 * 86400000);
+
+    const renewed = await prisma.careAssignment.update({
+      where: { id },
+      data: {
+        start_date: newStart,
+        end_date: newEnd,
+        status: 'IN_PROGRESS',
+        notes: JSON.stringify({ shift_type: shift_type || current.service_type, client_rate, caregiver_rate })
+      }
+    });
+
+    const invNumber = `FN-INV-2026-${Date.now().toString().slice(-4)}`;
+    const invoice = await prisma.invoice.create({
+      data: {
+        invoice_number: invNumber,
+        service_period_start: newStart,
+        service_period_end: newEnd,
+        billing_date: newStart,
+        due_date: new Date(newStart.getTime() + 7 * 86400000),
+        total_amount: new Decimal(client_rate || 30000),
+        status: 'ISSUED',
+        customer_id: current.customer_id,
+        notes: `Renewal invoice for placement #${current.assignment_number || current.id}`
+      }
+    });
+
+    res.json({ message: 'Placement renewed into new billing cycle', renewed, invoice });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to renew placement' });
+  }
+};
+
+export const closePlacementService = async (req: Request, res: Response) => {
+  const { id } = req.params;
+  const { reason, end_date } = req.body;
+  try {
+    const closed = await prisma.careAssignment.update({
+      where: { id },
+      data: {
+        status: 'COMPLETED',
+        employee_id: null,
+        end_date: end_date ? new Date(end_date) : new Date(),
+        notes: `Service closed. Reason: ${reason || 'Contract ended'}`
+      }
+    });
+    res.json({ message: 'Service closed and caregivers freed', closed });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to close service' });
+  }
+};
+
+export const getMoneyToCollect = async (req: Request, res: Response) => {
+  try {
+    const invoices = await prisma.invoice.findMany({
+      where: { status: { in: ['ISSUED', 'PENDING', 'PARTIALLY_PAID', 'OVERDUE'] } },
+      include: {
+        customer: true,
+        payments: { where: { status: 'CONFIRMED' } }
+      },
+      orderBy: { due_date: 'asc' }
+    });
+
+    const now = new Date();
+    const result = invoices.map(inv => {
+      const paid = inv.payments.reduce((s, p) => s + Number(p.amount), 0);
+      const balance = Number(inv.total_amount) - paid;
+      const isOverdue = inv.status === 'OVERDUE' || inv.due_date < now;
+      const daysOverdue = isOverdue ? Math.max(1, Math.round((now.getTime() - inv.due_date.getTime()) / 86400000)) : 0;
+      return {
+        id: inv.id,
+        invoice_number: inv.invoice_number,
+        customer_id: inv.customer_id,
+        customer_name: inv.customer?.full_name,
+        customer_phone: inv.customer?.phone,
+        total_amount: Number(inv.total_amount),
+        paid_amount: paid,
+        balance_due: balance,
+        due_date: inv.due_date,
+        is_overdue: isOverdue,
+        days_overdue: daysOverdue,
+        status: inv.status
+      };
+    }).filter(i => i.balance_due > 0);
+
+    const totalToCollect = result.reduce((s, i) => s + i.balance_due, 0);
+    res.json({ total: totalToCollect, items: result });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to fetch to-collect balances' });
+  }
+};
+
+export const getMoneyToPay = async (req: Request, res: Response) => {
+  try {
+    const caregivers = await prisma.user.findMany({
+      where: { role: 'EMPLOYEE', status: 'ACTIVE' },
+      include: {
+        attendance: true,
+        assignments: { where: { status: 'IN_PROGRESS' } }
+      }
+    });
+
+    const items = caregivers.map(cg => {
+      const isPlaced = cg.assignments.length > 0;
+      const daysWorked = cg.attendance.length || 22;
+      const monthlyRate = 18000;
+      const dailyRate = Math.round(monthlyRate / 30);
+      const accruedPay = daysWorked * dailyRate;
+      return {
+        id: cg.id,
+        name: cg.full_name,
+        phone: cg.phone,
+        role: cg.designation || 'Caregiver',
+        status: isPlaced ? 'Placed' : 'Free',
+        days_worked: daysWorked,
+        monthly_rate: monthlyRate,
+        payable_amount: accruedPay,
+        advance_paid: 3000
+      };
+    });
+
+    const totalToPay = items.reduce((s, i) => s + i.payable_amount, 0);
+    res.json({ total: totalToPay, items });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to fetch to-pay amounts' });
+  }
+};
+
+export const recordCaregiverPayout = async (req: Request, res: Response) => {
+  const { caregiver_id, amount, method, is_advance, note } = req.body;
+  try {
+    await prisma.auditLog.create({
+      data: {
+        action: is_advance ? 'CAREGIVER_ADVANCE_PAID' : 'CAREGIVER_SALARY_PAID',
+        entity_type: 'USER',
+        entity_id: caregiver_id,
+        actor_user_id: req.user?.id,
+        result: 'SUCCESS',
+        metadata: JSON.stringify({ amount, method, note })
+      }
+    });
+    res.json({ message: 'Payout recorded successfully', amount, method });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to record payout' });
+  }
+};
+

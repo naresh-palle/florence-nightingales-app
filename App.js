@@ -3,6 +3,7 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import LoginScreen from './src/screens/LoginScreen';
+import CareCDashboard from './src/screens/CareCDashboard';
 import AdminDashboard from './src/screens/AdminDashboard';
 import TeamLeadDashboard from './src/screens/TeamLeadDashboard';
 import EmployeeDashboard from './src/screens/EmployeeDashboard';
@@ -68,9 +69,16 @@ export default function App() {
         ) : (
           // User is signed in, route based on role
           <>
-            {userRole === 'ADMIN' && <Stack.Screen name="AdminDashboard">{(props) => <AdminDashboard {...props} token={userToken} onLogout={handleLogout} />}</Stack.Screen>}
-            {userRole === 'TEAM_LEAD' && <Stack.Screen name="TeamLeadDashboard">{(props) => <TeamLeadDashboard {...props} token={userToken} onLogout={handleLogout} />}</Stack.Screen>}
-            {userRole === 'EMPLOYEE' && <Stack.Screen name="EmployeeDashboard">{(props) => <EmployeeDashboard {...props} token={userToken} onLogout={handleLogout} />}</Stack.Screen>}
+            {(userRole === 'ADMIN' || userRole === 'TEAM_LEAD') && (
+              <Stack.Screen name="CareCDashboard">
+                {(props) => <CareCDashboard {...props} token={userToken} onLogout={handleLogout} />}
+              </Stack.Screen>
+            )}
+            {userRole === 'EMPLOYEE' && (
+              <Stack.Screen name="EmployeeDashboard">
+                {(props) => <EmployeeDashboard {...props} token={userToken} onLogout={handleLogout} />}
+              </Stack.Screen>
+            )}
           </>
         )}
       </Stack.Navigator>

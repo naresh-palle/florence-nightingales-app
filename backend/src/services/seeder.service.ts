@@ -111,13 +111,13 @@ export async function runCompleteSeed(forceClean: boolean = true) {
   }
   const [lead1] = leads;
 
-  // 5. Staff Members
+  // 5. Staff Members (CareC Caregivers)
   const staffDef = [
-    { email: 'swetha@florence.com', name: 'Swetha Nair', phone: '9000000003', desig: 'ICU Specialist Nurse', qual: 'B.Sc Nursing', exp: '4 years', team: team1 },
-    { email: 'ravi@florence.com', name: 'Ravi Kumar', phone: '9000000005', desig: 'Nursing Assistant', qual: 'GNM', exp: '2 years', team: team1 },
-    { email: 'arjun@florence.com', name: 'Arjun Menon', phone: '9000000008', desig: 'Home Care Nurse', qual: 'B.Sc Nursing', exp: '3 years', team: team2 },
-    { email: 'priya@florence.com', name: 'Priya Iyer', phone: '9000000009', desig: 'Physiotherapist', qual: 'BPT', exp: '5 years', team: team3 },
-    { email: 'kiran@florence.com', name: 'Kiran Rao', phone: '9000000010', desig: 'General Duty Nurse', qual: 'GNM', exp: '6 years', team: team4 },
+    { email: 'rekha@florence.com', name: 'Rekha Sharma', phone: '9819122334', desig: 'Caregiver', qual: 'Elderly Care Specialist', exp: '3 years', team: team1 },
+    { email: 'meena@florence.com', name: 'Meena Kumari', phone: '9822144556', desig: 'Staff Nurse', qual: 'B.Sc Nursing', exp: '5 years', team: team1 },
+    { email: 'sunita@florence.com', name: 'Sunita Devi', phone: '9833455667', desig: 'Caregiver', qual: 'Bedridden & Palliative Care', exp: '2 years', team: team2 },
+    { email: 'anita.y@florence.com', name: 'Anita Yadav', phone: '9844566778', desig: 'Staff Nurse', qual: 'GNM Critical Care', exp: '4 years', team: team3 },
+    { email: 'farah@florence.com', name: 'Farah Khan', phone: '9855677889', desig: 'Semi-nurse', qual: 'Baby Care & Home Nursing', exp: '1 year', team: team4 },
   ];
 
   const staffList: any[] = [];
@@ -140,15 +140,14 @@ export async function runCompleteSeed(forceClean: boolean = true) {
     });
     staffList.push(st);
   }
-  const [staff1, staff2] = staffList;
+  const [staff1, staff2, staff3, staff4, staff5] = staffList;
 
-  // 6. Customers & Patients
+  // 6. Customers & Patients (CareC Clients)
   const customersDef = [
-    { phone: '9876543210', full_name: 'Rajesh Patel', email: 'rajesh@example.com', address: '12 Banjara Hills, Hyderabad', service_type: '24/7 Critical Nursing', team_id: team1.id, notes: 'Post-bypass cardiac recovery. Vitals tracking mandatory.' },
-    { phone: '9123456789', full_name: 'Lakshmi Devi', email: 'lakshmi@example.com', address: '45 Jubilee Hills, Hyderabad', service_type: 'Elderly Home Care', team_id: team1.id, notes: 'Type-2 Diabetes. Blood glucose checks twice daily.' },
-    { phone: '9765432100', full_name: 'Suresh Mehta', email: 'suresh@example.com', address: '8 Madhapur, Hyderabad', service_type: 'Post-Surgery Rehab', team_id: team1.id, notes: 'Total knee replacement rehabilitation. Physiotherapy 3x weekly.' },
-    { phone: '9988776655', full_name: 'Kamala Bai', email: 'kamala@example.com', address: '22 Secunderabad, Hyderabad', service_type: 'Palliative Care', team_id: team2.id, notes: 'Compassionate care, pain management, oxygen support.' },
-    { phone: '9112233445', full_name: 'Dr. Venkat Rao', email: 'venkat@example.com', address: '5 Hitech City, Hyderabad', service_type: 'Stroke Recovery', team_id: team2.id, notes: 'Mobility assistance, daily speech exercises.' },
+    { phone: '9876543210', full_name: 'Ramesh Sharma', email: 'ramesh@example.com', address: '12 Banjara Hills, Hyderabad', service_type: '24/7 Critical Nursing', team_id: team1.id, notes: 'Post-bypass cardiac recovery. Vitals tracking mandatory.' },
+    { phone: '9123456789', full_name: 'Kamala Gupta', email: 'kamala@example.com', address: '45 Jubilee Hills, Hyderabad', service_type: 'Elderly Home Care', team_id: team1.id, notes: 'Type-2 Diabetes. Blood glucose checks twice daily.' },
+    { phone: '9765432100', full_name: 'Lakshmi Nair', email: 'lakshmi@example.com', address: '8 Madhapur, Hyderabad', service_type: 'Post-Surgery Rehab', team_id: team1.id, notes: 'Total knee replacement rehabilitation.' },
+    { phone: '9988776655', full_name: 'Ravi Iyer', email: 'ravi.iyer@example.com', address: '22 Secunderabad, Hyderabad', service_type: 'Palliative Care', team_id: team2.id, notes: 'Oxygen support. Overdue client as per CareC Walkthrough.' },
   ];
 
   const customers: any[] = [];
@@ -185,34 +184,53 @@ export async function runCompleteSeed(forceClean: boolean = true) {
     }
     patients.push(pat);
   }
-  const [c1, c2, c3, c4, c5] = customers;
-  const [p1, p2, p3] = patients;
+  const [c1, c2, c3, c4] = customers;
+  const [p1, p2, p3, p4] = patients;
 
-  // 7. Invoices & Payments (Comprehensive Financial Data)
+  // Add CareC Incoming Enquiries
+  await prisma.enquiry.createMany({
+    data: [
+      {
+        enquiry_number: 'ENQ-2026-001',
+        customer_name: 'Priya Nair',
+        phone: '9819144332',
+        service_required: 'Bedridden, 24h Live-in',
+        location: 'Andheri West',
+        expected_duration: 'Ongoing',
+        notes: 'Needs experienced female caregiver for elderly mother. Budget ₹28,000/mo.',
+        status: 'NEW',
+        assigned_team_id: team1.id
+      },
+      {
+        enquiry_number: 'ENQ-2026-002',
+        customer_name: 'Rahul Mehta',
+        phone: '9822311223',
+        service_required: 'Elder Care, 12h day',
+        location: 'Malad West',
+        expected_duration: '3 months',
+        notes: 'Routine assistance and vitals tracking. Budget ₹18,000/mo.',
+        status: 'NEW',
+        assigned_team_id: team2.id
+      }
+    ]
+  });
+
+  // 7. Invoices & Payments (Comprehensive Financial Data matching CareC walkthrough)
   const invoiceData = [
     {
-      customer: c1, total: 42000, status: InvoiceStatus.PARTIALLY_PAID, daysAgo: 20, dueDaysAgo: 10,
+      customer: c1, total: 30000, status: InvoiceStatus.PARTIALLY_PAID, daysAgo: 20, dueDaysAgo: 2,
       payments: [
-        { amount: 10000, method: PaymentMethod.UPI, daysAgo: 18, ref: 'UPI826351' },
-        { amount: 8000, method: PaymentMethod.CASH, daysAgo: 12, ref: 'CASH91234' },
+        { amount: 6400, method: PaymentMethod.UPI, daysAgo: 18, ref: 'UPI826351' },
       ]
     },
-    { customer: c2, total: 18000, status: InvoiceStatus.OVERDUE, daysAgo: 35, dueDaysAgo: 25, payments: [] },
+    { customer: c4, total: 18000, status: InvoiceStatus.OVERDUE, daysAgo: 35, dueDaysAgo: 12, payments: [] },
     {
-      customer: c3, total: 28500, status: InvoiceStatus.PAID, daysAgo: 40, dueDaysAgo: 30,
+      customer: c2, total: 35000, status: InvoiceStatus.PAID, daysAgo: 40, dueDaysAgo: 30,
       payments: [
-        { amount: 15000, method: PaymentMethod.BANK_TRANSFER, daysAgo: 38, ref: 'NEFT20260801' },
-        { amount: 13500, method: PaymentMethod.BANK_TRANSFER, daysAgo: 30, ref: 'NEFT20260810' },
+        { amount: 35000, method: PaymentMethod.BANK_TRANSFER, daysAgo: 38, ref: 'NEFT20260801' },
       ]
     },
-    { customer: c4, total: 22000, status: InvoiceStatus.PENDING, daysAgo: 5, dueDaysAgo: -5, payments: [] },
-    {
-      customer: c5, total: 55000, status: InvoiceStatus.PARTIALLY_PAID, daysAgo: 15, dueDaysAgo: 5,
-      payments: [
-        { amount: 25000, method: PaymentMethod.CARD, daysAgo: 13, ref: 'CARD7654321' },
-      ]
-    },
-    { customer: c1, total: 35000, status: InvoiceStatus.ISSUED, daysAgo: 1, dueDaysAgo: -14, payments: [] },
+    { customer: c3, total: 22000, status: InvoiceStatus.PENDING, daysAgo: 5, dueDaysAgo: -5, payments: [] },
   ];
 
   for (const inv of invoiceData) {

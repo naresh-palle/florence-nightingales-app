@@ -3,7 +3,14 @@ import { authenticate } from '../middleware/auth';
 import { requireRole } from '../middleware/rbac';
 import { createEmployee, getEmployees, deactivateEmployee } from '../controllers/employee.controller';
 import { createCustomer, getCustomers, getCustomerDetail } from '../controllers/customer.controller';
-import { getAssignments, createAssignment, getTasks, getAttendance, getTeamInvoices, getPatients, getEnquiries, getCatalog, createQuotation, getQuotations, getShifts, checkInShift, checkOutShift, requestLeave, getIncidents, createIncident, getAvailableReplacements, reassignShift } from '../controllers/operations.controller';
+import {
+  getAssignments, createAssignment, getTasks, getAttendance, getTeamInvoices, getPatients,
+  getEnquiries, getCatalog, createQuotation, getQuotations, getShifts, checkInShift, checkOutShift,
+  requestLeave, getIncidents, createIncident, getAvailableReplacements, reassignShift,
+  markCareCAttendance, convertEnquiryToClient, createCareCPlacement, replacePlacementCaregiver,
+  removePlacementCaregiver, renewPlacement, closePlacementService, getMoneyToCollect,
+  getMoneyToPay, recordCaregiverPayout
+} from '../controllers/operations.controller';
 import { Role } from '@prisma/client';
 
 const router = Router();
@@ -52,5 +59,17 @@ router.get('/attendance', requireRole([Role.ADMIN, Role.TEAM_LEAD, Role.EMPLOYEE
 
 // Finance Summary for Team Leads
 router.get('/invoices', requireRole([Role.ADMIN, Role.TEAM_LEAD]), getTeamInvoices);
+
+// CareC Specific Operational Routes
+router.post('/attendance/carec-mark', requireRole([Role.ADMIN, Role.TEAM_LEAD]), markCareCAttendance);
+router.post('/enquiries/convert-client', requireRole([Role.ADMIN, Role.TEAM_LEAD]), convertEnquiryToClient);
+router.post('/placements/create', requireRole([Role.ADMIN, Role.TEAM_LEAD]), createCareCPlacement);
+router.post('/placements/:id/replace', requireRole([Role.ADMIN, Role.TEAM_LEAD]), replacePlacementCaregiver);
+router.post('/placements/:id/remove', requireRole([Role.ADMIN, Role.TEAM_LEAD]), removePlacementCaregiver);
+router.post('/placements/:id/renew', requireRole([Role.ADMIN, Role.TEAM_LEAD]), renewPlacement);
+router.post('/placements/:id/close', requireRole([Role.ADMIN, Role.TEAM_LEAD]), closePlacementService);
+router.get('/money/to-collect', requireRole([Role.ADMIN, Role.TEAM_LEAD]), getMoneyToCollect);
+router.get('/money/to-pay', requireRole([Role.ADMIN, Role.TEAM_LEAD]), getMoneyToPay);
+router.post('/money/pay-caregiver', requireRole([Role.ADMIN, Role.TEAM_LEAD]), recordCaregiverPayout);
 
 export default router;
