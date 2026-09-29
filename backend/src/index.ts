@@ -15,9 +15,23 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/operations', operationsRoutes);
 app.use('/api/finance', financeRoutes);
 
-// Basic health check
-app.get('/health', (req, res) => {
-  res.json({ status: 'OK', message: 'Florence Nightingales API is running securely.' });
+// Basic health check with DB ping
+app.get('/health', async (req, res) => {
+  try {
+    const userCount = await prisma.user.count();
+    res.json({ 
+      status: 'OK', 
+      message: 'Florence Nightingales API is running securely.',
+      database: 'connected',
+      userCount
+    });
+  } catch (err: any) {
+    res.status(500).json({ 
+      status: 'DB_ERROR', 
+      message: 'Database query failed', 
+      error: err?.message || String(err) 
+    });
+  }
 });
 
 import { runCompleteSeed } from './services/seeder.service';
