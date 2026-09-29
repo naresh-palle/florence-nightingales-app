@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import LoginScreen from './src/screens/LoginScreen';
-import CareCDashboard from './src/screens/CareCDashboard';
+import FlorenceNightingalesDashboard from './src/screens/FlorenceNightingalesDashboard';
 import AdminDashboard from './src/screens/AdminDashboard';
 import TeamLeadDashboard from './src/screens/TeamLeadDashboard';
 import EmployeeDashboard from './src/screens/EmployeeDashboard';
@@ -59,29 +60,31 @@ export default function App() {
   }
 
   return (
-    <NavigationContainer>
-      <Stack.Navigator screenOptions={{ headerShown: false }}>
-        {userToken == null ? (
-          // No token found, user isn't signed in
-          <Stack.Screen name="Login">
-            {(props) => <LoginScreen {...props} setAuth={handleAuth} />}
-          </Stack.Screen>
-        ) : (
-          // User is signed in, route based on role
-          <>
-            {(userRole === 'ADMIN' || userRole === 'TEAM_LEAD') && (
-              <Stack.Screen name="CareCDashboard">
-                {(props) => <CareCDashboard {...props} token={userToken} onLogout={handleLogout} />}
-              </Stack.Screen>
-            )}
-            {userRole === 'EMPLOYEE' && (
-              <Stack.Screen name="EmployeeDashboard">
-                {(props) => <EmployeeDashboard {...props} token={userToken} onLogout={handleLogout} />}
-              </Stack.Screen>
-            )}
-          </>
-        )}
-      </Stack.Navigator>
-    </NavigationContainer>
+    <SafeAreaProvider>
+      <NavigationContainer>
+        <Stack.Navigator screenOptions={{ headerShown: false }}>
+          {userToken == null ? (
+            // No token found, user isn't signed in
+            <Stack.Screen name="Login">
+              {(props) => <LoginScreen {...props} setAuth={handleAuth} />}
+            </Stack.Screen>
+          ) : (
+            // User is signed in, route based on role
+            <>
+              {(userRole === 'ADMIN' || userRole === 'TEAM_LEAD') && (
+                <Stack.Screen name="FlorenceNightingalesDashboard">
+                  {(props) => <FlorenceNightingalesDashboard {...props} token={userToken} onLogout={handleLogout} />}
+                </Stack.Screen>
+              )}
+              {userRole === 'EMPLOYEE' && (
+                <Stack.Screen name="EmployeeDashboard">
+                  {(props) => <EmployeeDashboard {...props} token={userToken} onLogout={handleLogout} />}
+                </Stack.Screen>
+              )}
+            </>
+          )}
+        </Stack.Navigator>
+      </NavigationContainer>
+    </SafeAreaProvider>
   );
 }
