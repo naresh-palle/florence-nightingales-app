@@ -73,12 +73,12 @@ export default function App() {
             <>
               {(userRole === 'ADMIN' || userRole === 'TEAM_LEAD') && (
                 <Stack.Screen name="FlorenceNightingalesDashboard">
-                  {(props) => <FlorenceNightingalesDashboard {...props} token={userToken} onLogout={handleLogout} />}
+                  {(props) => <FlorenceNightingalesDashboard {...props} token={userToken} userRole={userRole} onLogout={handleLogout} />}
                 </Stack.Screen>
               )}
               {userRole === 'EMPLOYEE' && (
                 <Stack.Screen name="EmployeeDashboard">
-                  {(props) => <EmployeeDashboard {...props} token={userToken} onLogout={handleLogout} />}
+                  {(props) => <EmployeeDashboard {...props} token={userToken} userRole={userRole} onLogout={handleLogout} />}
                 </Stack.Screen>
               )}
             </>

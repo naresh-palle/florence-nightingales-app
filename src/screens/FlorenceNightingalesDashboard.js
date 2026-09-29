@@ -9,7 +9,7 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 const Tab = createBottomTabNavigator();
 const API = 'https://florence-nightingales-app.onrender.com';
 
-// ── SHARED STYLES & PILLS ───────────────────────────────────────────────────
+// ── STATUS PILL ──────────────────────────────────────────────────────────────
 const StatusPill = ({ label }) => {
   const stylesMap = {
     Placed: { bg: '#dcfce7', text: '#15803d', dot: '#22c55e' },
@@ -29,8 +29,9 @@ const StatusPill = ({ label }) => {
   );
 };
 
-// ── TAB 1: TODAY / ATTENDANCE ────────────────────────────────────────────────
-const TodayTab = ({ onLogout, navigation }) => {
+// ── TAB 1: TODAY / ATTENDANCE & OVERVIEW ──────────────────────────────────────
+const TodayTab = ({ userRole = 'ADMIN', onLogout, navigation }) => {
+  const isAdmin = userRole === 'ADMIN';
   const [selectedDate, setSelectedDate] = useState('Today');
   const [absentModalVisible, setAbsentModalVisible] = useState(false);
   const [selectedItem, setSelectedItem] = useState(null);
@@ -42,7 +43,7 @@ const TodayTab = ({ onLogout, navigation }) => {
 
   const markPresent = (id) => {
     setAttendanceList(prev => prev.map(item => item.id === id ? { ...item, status: 'Present' } : item));
-    Alert.alert('Recorded', 'Caregiver marked present. Ledger updated.');
+    Alert.alert('Attendance Recorded', 'Caregiver marked present. Shift logged for today.');
   };
 
   const openAbsentModal = (item) => {
@@ -54,7 +55,12 @@ const TodayTab = ({ onLogout, navigation }) => {
     if (!selectedItem) return;
     setAttendanceList(prev => prev.map(item => item.id === selectedItem.id ? { ...item, status: `Absent (${rule === 'DEDUCT' ? 'Deducted' : 'Paid'})` } : item));
     setAbsentModalVisible(false);
-    Alert.alert('Attendance Updated', rule === 'DEDUCT' ? '1 day pro-rated deduction applied to client invoice.' : 'Marked as agreed paid absence. No deduction.');
+    Alert.alert(
+      'Attendance Updated',
+      rule === 'DEDUCT' 
+        ? (isAdmin ? '1 day pro-rated deduction applied to client ledger.' : 'Marked absent with billing deduction recorded.')
+        : 'Marked as agreed paid absence / replacement staff.'
+    );
   };
 
   return (
@@ -62,10 +68,19 @@ const TodayTab = ({ onLogout, navigation }) => {
       <ScrollView style={ui.screen} contentContainerStyle={{ paddingBottom: 32 }}>
         {/* Florence Nightingales Agency Header */}
         <View style={ui.topHeader}>
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
             <View style={{ flex: 1, paddingRight: 8 }}>
               <Text style={ui.agencyTitle}>Florence Nightingales</Text>
-              <Text style={ui.agencySub}>Home Care Operations & Staffing • 24/7</Text>
+              <Text style={ui.agencySub}>
+                {isAdmin 
+                  ? 'Executive Operations & Financial Oversight • 24/7' 
+                  : 'Field Supervision & Clinical Operations • 24/7'}
+              </Text>
+              <View style={[ui.roleBadge, { backgroundColor: isAdmin ? '#dbeafe' : '#fef3c7' }]}>
+                <Text style={[ui.roleBadgeText, { color: isAdmin ? '#1e40af' : '#b45309' }]}>
+                  {isAdmin ? '👑 EXECUTIVE ADMIN' : '🏥 CLINICAL TEAM LEAD'}
+                </Text>
+              </View>
             </View>
             {onLogout && (
               <TouchableOpacity
@@ -79,7 +94,7 @@ const TodayTab = ({ onLogout, navigation }) => {
             )}
           </View>
 
-          {/* 4 Summary Metric Cards */}
+          {/* Metric Cards - Differentiated by Role */}
           <View style={ui.statsRow}>
             <View style={ui.statBox}>
               <Text style={ui.statLabel}>ACTIVE CLIENTS</Text>
@@ -90,30 +105,47 @@ const TodayTab = ({ onLogout, navigation }) => {
               <Text style={ui.statValue}>5</Text>
             </View>
           </View>
+
+          {/* Second Row: Admin sees Financials, Team Lead sees Shift Operations */}
           <View style={[ui.statsRow, { marginTop: 8 }]}>
-            <TouchableOpacity
-              style={[ui.statBox, { backgroundColor: '#f0fdf4', borderColor: '#bbf7d0' }]}
-              onPress={() => navigation.navigate('Money')}
-              activeOpacity={0.7}
-            >
-              <Text style={[ui.statLabel, { color: '#166534' }]}>TO COLLECT</Text>
-              <Text style={[ui.statValue, { color: '#15803d' }]}>₹41,600</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[ui.statBox, { backgroundColor: '#fefce8', borderColor: '#fef08a' }]}
-              onPress={() => navigation.navigate('Money')}
-              activeOpacity={0.7}
-            >
-              <Text style={[ui.statLabel, { color: '#854d0e' }]}>TO PAY</Text>
-              <Text style={[ui.statValue, { color: '#a16207' }]}>₹18,000</Text>
-            </TouchableOpacity>
+            {isAdmin ? (
+              <>
+                <TouchableOpacity
+                  style={[ui.statBox, { backgroundColor: '#f0fdf4', borderColor: '#bbf7d0' }]}
+                  onPress={() => navigation.navigate('Money')}
+                  activeOpacity={0.7}
+                >
+                  <Text style={[ui.statLabel, { color: '#166534' }]}>TO COLLECT (FINANCIAL)</Text>
+                  <Text style={[ui.statValue, { color: '#15803d' }]}>₹41,600</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[ui.statBox, { backgroundColor: '#fefce8', borderColor: '#fef08a' }]}
+                  onPress={() => navigation.navigate('Money')}
+                  activeOpacity={0.7}
+                >
+                  <Text style={[ui.statLabel, { color: '#854d0e' }]}>TO PAY (CAREGIVERS)</Text>
+                  <Text style={[ui.statValue, { color: '#a16207' }]}>₹18,000</Text>
+                </TouchableOpacity>
+              </>
+            ) : (
+              <>
+                <View style={[ui.statBox, { backgroundColor: '#eff6ff', borderColor: '#bfdbfe' }]}>
+                  <Text style={[ui.statLabel, { color: '#1e40af' }]}>TODAY'S ACTIVE SHIFTS</Text>
+                  <Text style={[ui.statValue, { color: '#1d4ed8' }]}>3 Shifts</Text>
+                </View>
+                <View style={[ui.statBox, { backgroundColor: '#f5f3ff', borderColor: '#ddd6fe' }]}>
+                  <Text style={[ui.statLabel, { color: '#6d28d9' }]}>CARE ALERTS PENDING</Text>
+                  <Text style={[ui.statValue, { color: '#7c3aed' }]}>2 Cases</Text>
+                </View>
+              </>
+            )}
           </View>
         </View>
 
         {/* Date Selector */}
         <View style={{ paddingHorizontal: 16, paddingVertical: 12 }}>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
-            {['Today', 'Yesterday', '5 Jul', '4 Jul', '3 Jul'].map(d => (
+            {['Today', 'Yesterday', '28 Sep', '27 Sep', '26 Sep'].map(d => (
               <TouchableOpacity
                 key={d}
                 style={[ui.datePill, selectedDate === d && ui.datePillActive]}
@@ -126,13 +158,15 @@ const TodayTab = ({ onLogout, navigation }) => {
           </ScrollView>
         </View>
 
-        {/* Alerts Section (Renewals & Enquiries) */}
+        {/* Operational Alerts */}
         <View style={{ paddingHorizontal: 16, marginBottom: 16 }}>
-          <Text style={ui.sectionHeader}>Operational Alerts</Text>
+          <Text style={ui.sectionHeader}>Operational & Clinical Alerts</Text>
           <View style={ui.alertCard}>
             <View style={{ flex: 1, paddingRight: 8 }}>
               <Text style={ui.alertTitle}>⚠️ Sharma family renewal</Text>
-              <Text style={ui.alertSub}>Due in 2 days • ₹30,000</Text>
+              <Text style={ui.alertSub}>
+                {isAdmin ? 'Due in 2 days • ₹30,000 billing cycle' : 'Due in 2 days • Service continuation review'}
+              </Text>
             </View>
             <TouchableOpacity
               style={ui.alertActionBtn}
@@ -140,13 +174,16 @@ const TodayTab = ({ onLogout, navigation }) => {
               activeOpacity={0.7}
               hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
             >
-              <Text style={ui.alertActionText}>Renew</Text>
+              <Text style={ui.alertActionText}>Review</Text>
             </TouchableOpacity>
           </View>
+
           <View style={[ui.alertCard, { marginTop: 8, borderColor: '#bae6fd', backgroundColor: '#f0f9ff' }]}>
             <View style={{ flex: 1, paddingRight: 8 }}>
-              <Text style={[ui.alertTitle, { color: '#0369a1' }]}>📞 2 enquiries pending</Text>
-              <Text style={[ui.alertSub, { color: '#0284c7' }]}>Waiting for coordinator follow-up</Text>
+              <Text style={[ui.alertTitle, { color: '#0369a1' }]}>📞 2 patient enquiries pending</Text>
+              <Text style={[ui.alertSub, { color: '#0284c7' }]}>
+                {isAdmin ? 'Pending conversion & caregiver assignment' : 'Clinical assessment required'}
+              </Text>
             </View>
             <TouchableOpacity
               style={[ui.alertActionBtn, { backgroundColor: '#0284c7' }]}
@@ -162,8 +199,8 @@ const TodayTab = ({ onLogout, navigation }) => {
         {/* Daily Attendance Verification */}
         <View style={{ paddingHorizontal: 16 }}>
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
-            <Text style={ui.sectionHeader}>Today's Attendance</Text>
-            <Text style={ui.badgeMuted}>3 assigned shifts</Text>
+            <Text style={ui.sectionHeader}>Today's Verified Attendance</Text>
+            <Text style={ui.badgeMuted}>3 field shifts</Text>
           </View>
 
           {attendanceList.map(item => (
@@ -201,12 +238,12 @@ const TodayTab = ({ onLogout, navigation }) => {
         </View>
       </ScrollView>
 
-      {/* Modal: Absent Billing Rule Selection */}
+      {/* Modal: Absent Rule */}
       <Modal visible={absentModalVisible} transparent animationType="fade">
         <View style={ui.modalOverlay}>
           <View style={ui.modalCard}>
             <Text style={ui.modalTitle}>Mark Absent: {selectedItem?.caregiver}</Text>
-            <Text style={ui.modalSub}>Select billing adjustment rule for {selectedItem?.client}:</Text>
+            <Text style={ui.modalSub}>Select adjustment rule for {selectedItem?.client}:</Text>
 
             <TouchableOpacity
               style={ui.optionCard}
@@ -214,7 +251,9 @@ const TodayTab = ({ onLogout, navigation }) => {
               activeOpacity={0.7}
             >
               <Text style={ui.optionTitle}>📉 Deduct from Client Bill</Text>
-              <Text style={ui.optionSub}>Automatically credits 1 day rate back to client invoice and ledger.</Text>
+              <Text style={ui.optionSub}>
+                {isAdmin ? 'Automatically credits 1 day rate back to client invoice and ledger.' : 'Records absence with billing deduction for unserved shift.'}
+              </Text>
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -222,8 +261,8 @@ const TodayTab = ({ onLogout, navigation }) => {
               onPress={() => confirmAbsent('PAID')}
               activeOpacity={0.7}
             >
-              <Text style={ui.optionTitle}>🛡️ Agreed Paid Absence / Replacement Sent</Text>
-              <Text style={ui.optionSub}>Keep full billing without deduction (replacement staff assigned or contract allowance).</Text>
+              <Text style={ui.optionTitle}>🛡️ Agreed Paid Absence / Substitute Caregiver</Text>
+              <Text style={ui.optionSub}>Keep full billing without deduction (replacement caregiver assigned or contracted leave).</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -240,20 +279,20 @@ const TodayTab = ({ onLogout, navigation }) => {
   );
 };
 
-// ── TAB 2: CAREGIVERS ────────────────────────────────────────────────────────
-const CaregiversTab = () => {
+// ── TAB 2: CAREGIVERS (STAFFING) ─────────────────────────────────────────────
+const CaregiversTab = ({ userRole = 'ADMIN' }) => {
+  const isAdmin = userRole === 'ADMIN';
   const [filter, setFilter] = useState('All');
   const [search, setSearch] = useState('');
   const [addModal, setAddModal] = useState(false);
   const [caregivers, setCaregivers] = useState([
-    { id: '1', name: 'Rekha Sharma', phone: '98191 22334', role: 'Caregiver', status: 'Free', exp: '3 yrs', rate: '₹18,000/mo', skills: ['Elderly Care', 'Assistance'], languages: ['Hindi'] },
-    { id: '2', name: 'Meena Kumari', phone: '98221 44556', role: 'Staff Nurse', status: 'Placed', client: 'Ramesh Sharma', exp: '5 yrs', rate: '₹22,000/mo', skills: ['Critical Care', 'Vitals'], languages: ['Hindi', 'English'] },
-    { id: '3', name: 'Sunita Devi', phone: '98334 55667', role: 'Caregiver', status: 'Placed', client: 'Kamala Gupta', exp: '2 yrs', rate: '₹16,000/mo', skills: ['Bedridden Care', 'Palliative'], languages: ['Hindi'] },
-    { id: '4', name: 'Anita Yadav', phone: '98445 66778', role: 'Staff Nurse', status: 'Placed', client: 'Ramesh Sharma', exp: '4 yrs', rate: '₹20,000/mo', skills: ['ICU Support', 'Post-Surgery'], languages: ['Hindi', 'Telugu'] },
-    { id: '5', name: 'Farah Khan', phone: '98556 77889', role: 'Semi-nurse', status: 'Free', exp: '1 yr', rate: '₹15,000/mo', skills: ['Baby Care', 'Home Nursing'], languages: ['Hindi', 'English'] },
+    { id: '1', name: 'Rekha Sharma', phone: '98191 22334', role: 'Caregiver', status: 'Free', exp: '3 yrs', rate: '₹18,000/mo', readiness: 'Available for immediate duty', skills: ['Elderly Care', 'Assistance'] },
+    { id: '2', name: 'Meena Kumari', phone: '98221 44556', role: 'Staff Nurse', status: 'Placed', client: 'Ramesh Sharma', exp: '5 yrs', rate: '₹22,000/mo', readiness: 'On duty (12h day)', skills: ['Critical Care', 'Vitals'] },
+    { id: '3', name: 'Sunita Devi', phone: '98334 55667', role: 'Caregiver', status: 'Placed', client: 'Kamala Gupta', exp: '2 yrs', rate: '₹16,000/mo', readiness: 'On duty (Live-in)', skills: ['Bedridden Care', 'Palliative'] },
+    { id: '4', name: 'Anita Yadav', phone: '98445 66778', role: 'Staff Nurse', status: 'Placed', client: 'Ramesh Sharma', exp: '4 yrs', rate: '₹20,000/mo', readiness: 'On duty (12h night)', skills: ['ICU Support', 'Post-Surgery'] },
+    { id: '5', name: 'Farah Khan', phone: '98556 77889', role: 'Semi-nurse', status: 'Free', exp: '1 yr', rate: '₹15,000/mo', readiness: 'Available for immediate duty', skills: ['Baby Care', 'Home Nursing'] },
   ]);
 
-  // Add form states
   const [newName, setNewName] = useState('');
   const [newPhone, setNewPhone] = useState('');
   const [newRole, setNewRole] = useState('Caregiver');
@@ -279,8 +318,8 @@ const CaregiversTab = () => {
       status: 'Free',
       exp: `${newExp} yrs`,
       rate: `₹${Number(newRate).toLocaleString('en-IN')}/mo`,
-      skills: ['Elderly Care', 'Patient Assistance'],
-      languages: ['Hindi']
+      readiness: 'Available for immediate duty',
+      skills: ['Elderly Care', 'Patient Assistance']
     };
     setCaregivers([newEntry, ...caregivers]);
     setAddModal(false);
@@ -292,11 +331,12 @@ const CaregiversTab = () => {
   return (
     <SafeAreaView edges={['top']} style={ui.safeContainer}>
       <View style={ui.screen}>
-        {/* Header with Title and Add Button */}
         <View style={ui.headerWithAction}>
           <View style={{ flex: 1 }}>
-            <Text style={ui.pageTitle}>Caregivers</Text>
-            <Text style={ui.pageSub}>Manage, onboard & match care staff</Text>
+            <Text style={ui.pageTitle}>Caregivers & Nurses</Text>
+            <Text style={ui.pageSub}>
+              {isAdmin ? 'Staff roster, onboarding & compensation' : 'Clinical team management & shift allocation'}
+            </Text>
           </View>
           <TouchableOpacity
             style={ui.primaryAddBtn}
@@ -304,15 +344,15 @@ const CaregiversTab = () => {
             activeOpacity={0.7}
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
           >
-            <Text style={ui.primaryAddBtnText}>+ Add Caregiver</Text>
+            <Text style={ui.primaryAddBtnText}>+ Onboard Staff</Text>
           </TouchableOpacity>
         </View>
 
-        {/* Search Input */}
+        {/* Search */}
         <View style={{ paddingHorizontal: 16, marginBottom: 10 }}>
           <TextInput
             style={ui.searchInput}
-            placeholder="🔍  Search name or phone..."
+            placeholder="🔍  Search staff name or phone..."
             value={search}
             onChangeText={setSearch}
             placeholderTextColor="#94a3b8"
@@ -335,7 +375,7 @@ const CaregiversTab = () => {
           </ScrollView>
         </View>
 
-        {/* Caregiver List */}
+        {/* List */}
         <FlatList
           data={filtered}
           keyExtractor={i => i.id}
@@ -348,7 +388,7 @@ const CaregiversTab = () => {
                   <Text style={ui.cardSub}>📞 {item.phone} • {item.exp} exp</Text>
                   {item.client && (
                     <Text style={[ui.cardSub, { color: '#0369a1', marginTop: 2, fontWeight: '600' }]}>
-                      Currently placed with: {item.client}
+                      Placed with: {item.client}
                     </Text>
                   )}
                 </View>
@@ -360,8 +400,10 @@ const CaregiversTab = () => {
                 {item.skills?.map(s => (
                   <View key={s} style={ui.skillTag}><Text style={ui.skillText}>{s}</Text></View>
                 ))}
+                
+                {/* Admin sees financial compensation rate; Team Lead sees readiness status */}
                 <Text style={{ marginLeft: 'auto', fontSize: 13, fontWeight: '800', color: '#0f172a' }}>
-                  {item.rate}
+                  {isAdmin ? item.rate : item.readiness}
                 </Text>
               </View>
             </View>
@@ -372,8 +414,8 @@ const CaregiversTab = () => {
         <Modal visible={addModal} transparent animationType="slide">
           <View style={ui.modalOverlay}>
             <View style={ui.modalCard}>
-              <Text style={ui.modalTitle}>Onboard Caregiver</Text>
-              <Text style={ui.modalSub}>Add caregiver to Florence Nightingales active roster</Text>
+              <Text style={ui.modalTitle}>Onboard Staff Member</Text>
+              <Text style={ui.modalSub}>Add caregiver or nurse to Florence Nightingales active roster</Text>
 
               <Text style={ui.fieldLabel}>Full Name</Text>
               <TextInput
@@ -409,16 +451,18 @@ const CaregiversTab = () => {
               </View>
 
               <View style={{ flexDirection: 'row', gap: 10 }}>
-                <View style={{ flex: 1 }}>
-                  <Text style={ui.fieldLabel}>Expected Rate (₹/mo)</Text>
-                  <TextInput
-                    style={ui.fieldInput}
-                    keyboardType="numeric"
-                    value={newRate}
-                    onChangeText={setNewRate}
-                    placeholderTextColor="#94a3b8"
-                  />
-                </View>
+                {isAdmin && (
+                  <View style={{ flex: 1 }}>
+                    <Text style={ui.fieldLabel}>Rate (₹/mo)</Text>
+                    <TextInput
+                      style={ui.fieldInput}
+                      keyboardType="numeric"
+                      value={newRate}
+                      onChangeText={setNewRate}
+                      placeholderTextColor="#94a3b8"
+                    />
+                  </View>
+                )}
                 <View style={{ flex: 1 }}>
                   <Text style={ui.fieldLabel}>Experience (Yrs)</Text>
                   <TextInput
@@ -432,7 +476,7 @@ const CaregiversTab = () => {
               </View>
 
               <TouchableOpacity style={ui.submitBtn} onPress={handleAddCaregiver} activeOpacity={0.7}>
-                <Text style={ui.submitBtnText}>Save to Roster</Text>
+                <Text style={ui.submitBtnText}>Save to Active Roster</Text>
               </TouchableOpacity>
 
               <TouchableOpacity style={ui.cancelBtn} onPress={() => setAddModal(false)} activeOpacity={0.7}>
@@ -446,8 +490,9 @@ const CaregiversTab = () => {
   );
 };
 
-// ── TAB 3: CLIENTS & ENQUIRIES ───────────────────────────────────────────────
-const ClientsTab = () => {
+// ── TAB 3: CLIENTS & PATIENTS ────────────────────────────────────────────────
+const ClientsTab = ({ userRole = 'ADMIN' }) => {
+  const isAdmin = userRole === 'ADMIN';
   const [segment, setSegment] = useState('Enquiries');
   const [convertModal, setConvertModal] = useState(false);
   const [selectedEnquiry, setSelectedEnquiry] = useState(null);
@@ -463,8 +508,8 @@ const ClientsTab = () => {
   ]);
 
   const [clients, setClients] = useState([
-    { id: '1', name: 'Ramesh Sharma', phone: '98765 43210', area: 'Banjara Hills', caregiversCount: 2, caregiverName: 'Meena Kumari & Anita Yadav', dues: '₹23,600' },
-    { id: '2', name: 'Kamala Gupta', phone: '98123 45678', area: 'Jubilee Hills', caregiversCount: 1, caregiverName: 'Sunita Devi', dues: '₹0 (Paid)' },
+    { id: '1', name: 'Ramesh Sharma', phone: '98765 43210', area: 'Banjara Hills', caregiversCount: 2, caregiverName: 'Meena Kumari & Anita Yadav', dues: '₹23,600', clinicalPlan: 'Post-Stroke Critical Care • 24/7' },
+    { id: '2', name: 'Kamala Gupta', phone: '98123 45678', area: 'Jubilee Hills', caregiversCount: 1, caregiverName: 'Sunita Devi', dues: '₹0 (Paid)', clinicalPlan: 'Mobility & Palliative Support • Live-in' },
   ]);
 
   const openConvert = (enq) => {
@@ -481,8 +526,9 @@ const ClientsTab = () => {
       phone: selectedEnquiry.phone,
       area: selectedEnquiry.area,
       caregiversCount: 0,
-      caregiverName: 'Unassigned (Ready for placement)',
-      dues: '₹0'
+      caregiverName: 'Unassigned (Ready for staff placement)',
+      dues: '₹0',
+      clinicalPlan: 'Assessment Completed • Care Plan Active'
     };
     setClients([newClient, ...clients]);
     setEnquiries(enquiries.filter(e => e.id !== selectedEnquiry.id));
@@ -494,11 +540,12 @@ const ClientsTab = () => {
   return (
     <SafeAreaView edges={['top']} style={ui.safeContainer}>
       <View style={ui.screen}>
-        {/* Header */}
         <View style={ui.headerWithAction}>
           <View>
-            <Text style={ui.pageTitle}>Clients & Leads</Text>
-            <Text style={ui.pageSub}>From first inquiry to continuous home care</Text>
+            <Text style={ui.pageTitle}>Clients & Patients</Text>
+            <Text style={ui.pageSub}>
+              {isAdmin ? 'Client portfolio, contracts & billing status' : 'Patient cases & clinical intake coordination'}
+            </Text>
           </View>
         </View>
 
@@ -520,7 +567,7 @@ const ClientsTab = () => {
               activeOpacity={0.7}
             >
               <Text style={[ui.segmentText, segment === 'Clients' && ui.segmentTextActive]}>
-                🤝 Clients ({clients.length})
+                🤝 Active Clients ({clients.length})
               </Text>
             </TouchableOpacity>
           </View>
@@ -543,7 +590,7 @@ const ClientsTab = () => {
 
                 <View style={{ flexDirection: 'row', gap: 6, marginVertical: 8, flexWrap: 'wrap' }}>
                   <View style={ui.skillTag}><Text style={ui.skillText}>Need: {item.need}</Text></View>
-                  <View style={ui.skillTag}><Text style={ui.skillText}>Budget: {item.budget}</Text></View>
+                  {isAdmin && <View style={ui.skillTag}><Text style={ui.skillText}>Budget: {item.budget}</Text></View>}
                 </View>
 
                 <TouchableOpacity
@@ -552,7 +599,7 @@ const ClientsTab = () => {
                   activeOpacity={0.7}
                   hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                 >
-                  <Text style={ui.convertBtnText}>Convert to Client →</Text>
+                  <Text style={ui.convertBtnText}>Convert to Active Client →</Text>
                 </TouchableOpacity>
               </View>
             )}
@@ -565,31 +612,46 @@ const ClientsTab = () => {
             renderItem={({ item }) => (
               <View style={ui.card}>
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                  <View style={{ flex: 1 }}>
+                  <View style={{ flex: 1, paddingRight: 8 }}>
                     <Text style={ui.cardTitle}>{item.name}</Text>
                     <Text style={ui.cardSub}>📞 {item.phone} • 📍 {item.area}</Text>
                     <Text style={[ui.cardSub, { color: '#0369a1', marginTop: 4, fontWeight: '600' }]}>
                       Assigned: {item.caregiverName}
                     </Text>
                   </View>
+                  
+                  {/* Admin sees outstanding financial dues; Team Lead sees clinical plan status */}
                   <View style={{ alignItems: 'flex-end' }}>
-                    <Text style={{ fontSize: 11, color: '#64748b', fontWeight: '700' }}>OUTSTANDING</Text>
-                    <Text style={{ fontSize: 15, fontWeight: '800', color: item.dues.includes('0') ? '#15803d' : '#b91c1c' }}>
-                      {item.dues}
-                    </Text>
+                    {isAdmin ? (
+                      <>
+                        <Text style={{ fontSize: 11, color: '#64748b', fontWeight: '700' }}>OUTSTANDING</Text>
+                        <Text style={{ fontSize: 15, fontWeight: '800', color: item.dues.includes('0') ? '#15803d' : '#b91c1c' }}>
+                          {item.dues}
+                        </Text>
+                      </>
+                    ) : (
+                      <View style={[ui.skillTag, { backgroundColor: '#eff6ff' }]}>
+                        <Text style={{ fontSize: 11, color: '#1e40af', fontWeight: '700' }}>MONITORED</Text>
+                      </View>
+                    )}
                   </View>
                 </View>
+                {!isAdmin && (
+                  <Text style={{ fontSize: 12, color: '#334155', marginTop: 8, fontStyle: 'italic' }}>
+                    🩺 Protocol: {item.clinicalPlan}
+                  </Text>
+                )}
               </View>
             )}
           />
         )}
 
-        {/* Modal: 1-Tap Convert Enquiry to Client */}
+        {/* Modal: Convert */}
         <Modal visible={convertModal} transparent animationType="slide">
           <View style={ui.modalOverlay}>
             <View style={ui.modalCard}>
               <Text style={ui.modalTitle}>Convert Enquiry to Client</Text>
-              <Text style={ui.modalSub}>All details prefilled from enquiry. Ready to place care staff.</Text>
+              <Text style={ui.modalSub}>Prefilled from enquiry. Ready to place care staff.</Text>
 
               <View style={ui.prefillNotice}>
                 <Text style={{ fontSize: 13, fontWeight: '700', color: '#15803d' }}>
@@ -654,8 +716,9 @@ const ClientsTab = () => {
   );
 };
 
-// ── TAB 4: PLACEMENTS ────────────────────────────────────────────────────────
-const PlacementsTab = () => {
+// ── TAB 4: PLACEMENTS & SHIFTS ───────────────────────────────────────────────
+const PlacementsTab = ({ userRole = 'ADMIN' }) => {
+  const isAdmin = userRole === 'ADMIN';
   const [createModal, setCreateModal] = useState(false);
   const [step, setStep] = useState(1);
   const [clientRate, setClientRate] = useState('30000');
@@ -666,8 +729,8 @@ const PlacementsTab = () => {
   const marginPct = Number(clientRate) > 0 ? Math.round((liveMargin / Number(clientRate)) * 100) : 0;
 
   const [placements, setPlacements] = useState([
-    { id: '1', client: 'Ramesh Sharma', caregiver: 'Meena Kumari', shift: '12h day', clientPay: 30000, cgGet: 22000, margin: 8000, marginPct: 27, status: 'Active' },
-    { id: '2', client: 'Kamala Gupta', caregiver: 'Sunita Devi', shift: 'Live-in', clientPay: 35000, cgGet: 25000, margin: 10000, marginPct: 29, status: 'Active' },
+    { id: '1', client: 'Ramesh Sharma', caregiver: 'Meena Kumari', shift: '12h day', clientPay: 30000, cgGet: 22000, margin: 8000, marginPct: 27, status: 'Active', clinicalNotes: 'Vitals twice daily • Medication compliance' },
+    { id: '2', client: 'Kamala Gupta', caregiver: 'Sunita Devi', shift: 'Live-in', clientPay: 35000, cgGet: 25000, margin: 10000, marginPct: 29, status: 'Active', clinicalNotes: 'Assisted ambulation • Bed sore prevention' },
   ]);
 
   const handleFinishPlacement = () => {
@@ -680,12 +743,18 @@ const PlacementsTab = () => {
       cgGet: Number(caregiverRate),
       margin: liveMargin,
       marginPct,
-      status: 'Active'
+      status: 'Active',
+      clinicalNotes: 'Bedridden care • 24h assistance'
     };
     setPlacements([newP, ...placements]);
     setCreateModal(false);
     setStep(1);
-    Alert.alert('Placement Created!', 'Caregiver placed and invoice of ₹' + Number(clientRate).toLocaleString('en-IN') + ' created.');
+    Alert.alert(
+      'Placement Created!', 
+      isAdmin 
+        ? 'Caregiver placed and invoice of ₹' + Number(clientRate).toLocaleString('en-IN') + ' created.'
+        : 'Placement scheduled. Caregiver shift assignment activated.'
+    );
   };
 
   const handleReplace = (item) => {
@@ -708,15 +777,15 @@ const PlacementsTab = () => {
   const handleRemove = (item) => {
     Alert.alert(
       'Remove Caregiver',
-      `Remove caregiver from ${item.client}? Unserved days will be credited back to the client ledger.`,
+      `Remove caregiver from ${item.client}?`,
       [
         { text: 'Cancel', style: 'cancel' },
         {
-          text: 'Remove & Credit Pro-rata',
+          text: 'Confirm Removal',
           style: 'destructive',
           onPress: () => {
             setPlacements(prev => prev.filter(p => p.id !== item.id));
-            Alert.alert('Removed', 'Caregiver freed. Pro-rated credit applied to client account.');
+            Alert.alert('Removed', 'Caregiver freed and unassigned from placement.');
           }
         }
       ]
@@ -726,13 +795,13 @@ const PlacementsTab = () => {
   const handleRenew = (item) => {
     Alert.alert(
       'Renew Placement',
-      `Roll placement for ${item.client} into next 30-day billing cycle?\nClient pays: ₹${item.clientPay}\nCaregiver gets: ₹${item.cgGet}`,
+      `Roll placement for ${item.client} into next 30-day care cycle?`,
       [
         { text: 'Cancel', style: 'cancel' },
         {
-          text: 'Confirm Renewal & Send Invoice',
+          text: 'Confirm Renewal',
           onPress: () => {
-            Alert.alert('Renewed', 'Placement rolled into new period. Renewal alert cleared.');
+            Alert.alert('Renewed', 'Placement rolled into new period.');
           }
         }
       ]
@@ -742,7 +811,7 @@ const PlacementsTab = () => {
   const handleClose = (item) => {
     Alert.alert(
       'Close Service',
-      `Close service for ${item.client}? Reasons: Contract ended, Patient recovered, Hospitalized. Frees caregiver immediately while keeping ledger intact.`,
+      `Close service for ${item.client}? Contract ended or patient recovered.`,
       [
         { text: 'Cancel', style: 'cancel' },
         {
@@ -760,11 +829,12 @@ const PlacementsTab = () => {
   return (
     <SafeAreaView edges={['top']} style={ui.safeContainer}>
       <View style={ui.screen}>
-        {/* Header */}
         <View style={ui.headerWithAction}>
           <View style={{ flex: 1 }}>
-            <Text style={ui.pageTitle}>Placements</Text>
-            <Text style={ui.pageSub}>Shifts, agency margins & renewals</Text>
+            <Text style={ui.pageTitle}>Placements & Shifts</Text>
+            <Text style={ui.pageSub}>
+              {isAdmin ? 'Shift allocations, agency margins & billing cycles' : 'Care schedules, caregiver assignments & duty handover'}
+            </Text>
           </View>
           <TouchableOpacity
             style={ui.primaryAddBtn}
@@ -790,28 +860,41 @@ const PlacementsTab = () => {
                 <StatusPill label={item.status} />
               </View>
 
-              {/* Financial Margin Display */}
-              <View style={ui.marginBox}>
-                <View>
-                  <Text style={ui.marginSub}>CLIENT PAYS</Text>
-                  <Text style={ui.marginVal}>₹{item.clientPay.toLocaleString('en-IN')}</Text>
+              {/* ROLE BASED DIFFERENTIATION: ADMIN SEES FINANCIAL MARGINS; TEAM LEAD SEES CLINICAL SHIFT PLAN */}
+              {isAdmin ? (
+                <View style={ui.marginBox}>
+                  <View>
+                    <Text style={ui.marginSub}>CLIENT PAYS</Text>
+                    <Text style={ui.marginVal}>₹{item.clientPay.toLocaleString('en-IN')}</Text>
+                  </View>
+                  <View>
+                    <Text style={ui.marginSub}>CAREGIVER GETS</Text>
+                    <Text style={ui.marginVal}>₹{item.cgGet.toLocaleString('en-IN')}</Text>
+                  </View>
+                  <View>
+                    <Text style={[ui.marginSub, { color: '#15803d' }]}>AGENCY MARGIN</Text>
+                    <Text style={[ui.marginVal, { color: '#15803d' }]}>
+                      ₹{item.margin.toLocaleString('en-IN')} ({item.marginPct}%)
+                    </Text>
+                  </View>
                 </View>
-                <View>
-                  <Text style={ui.marginSub}>CAREGIVER GETS</Text>
-                  <Text style={ui.marginVal}>₹{item.cgGet.toLocaleString('en-IN')}</Text>
+              ) : (
+                <View style={[ui.marginBox, { backgroundColor: '#eff6ff', borderColor: '#bfdbfe' }]}>
+                  <View>
+                    <Text style={[ui.marginSub, { color: '#1e40af' }]}>SHIFT SCHEDULE</Text>
+                    <Text style={[ui.marginVal, { color: '#1e3a8a', fontSize: 13 }]}>{item.shift} (Active)</Text>
+                  </View>
+                  <View style={{ alignItems: 'flex-end' }}>
+                    <Text style={[ui.marginSub, { color: '#1e40af' }]}>CARE PROTOCOL</Text>
+                    <Text style={[ui.marginVal, { color: '#1e3a8a', fontSize: 12 }]}>{item.clinicalNotes}</Text>
+                  </View>
                 </View>
-                <View>
-                  <Text style={[ui.marginSub, { color: '#15803d' }]}>AGENCY MARGIN</Text>
-                  <Text style={[ui.marginVal, { color: '#15803d' }]}>
-                    ₹{item.margin.toLocaleString('en-IN')} ({item.marginPct}%)
-                  </Text>
-                </View>
-              </View>
+              )}
 
               {/* Lifecycle Actions */}
               <View style={{ flexDirection: 'row', gap: 8, marginTop: 12, flexWrap: 'wrap' }}>
                 <TouchableOpacity style={ui.actionPill} onPress={() => handleReplace(item)} activeOpacity={0.7}>
-                  <Text style={ui.actionPillText}>🔄 Replace</Text>
+                  <Text style={ui.actionPillText}>🔄 Replace Staff</Text>
                 </TouchableOpacity>
                 <TouchableOpacity style={ui.actionPill} onPress={() => handleRemove(item)} activeOpacity={0.7}>
                   <Text style={ui.actionPillText}>❌ Remove</Text>
@@ -820,7 +903,7 @@ const PlacementsTab = () => {
                   <Text style={[ui.actionPillText, { color: '#b45309' }]}>🔁 Renew</Text>
                 </TouchableOpacity>
                 <TouchableOpacity style={ui.actionPill} onPress={() => handleClose(item)} activeOpacity={0.7}>
-                  <Text style={ui.actionPillText}>🔒 Close</Text>
+                  <Text style={ui.actionPillText}>🔒 Close Case</Text>
                 </TouchableOpacity>
               </View>
             </View>
@@ -831,7 +914,7 @@ const PlacementsTab = () => {
         <Modal visible={createModal} transparent animationType="slide">
           <View style={ui.modalOverlay}>
             <View style={ui.modalCard}>
-              <Text style={ui.modalTitle}>New Placement (Step {step}/3)</Text>
+              <Text style={ui.modalTitle}>New Placement (Step {step}/{isAdmin ? '3' : '2'})</Text>
 
               {step === 1 && (
                 <View>
@@ -845,11 +928,11 @@ const PlacementsTab = () => {
                   <Text style={[ui.fieldLabel, { marginTop: 12 }]}>Available Free Caregiver</Text>
                   <View style={ui.pickerOption}>
                     <Text style={ui.pickerOptionTitle}>Rekha Sharma (Free)</Text>
-                    <Text style={ui.pickerOptionSub}>3 yrs exp • ₹18,000/mo expected</Text>
+                    <Text style={ui.pickerOptionSub}>3 yrs exp • Certified Caregiver</Text>
                   </View>
 
                   <TouchableOpacity style={ui.submitBtn} onPress={() => setStep(2)} activeOpacity={0.7}>
-                    <Text style={ui.submitBtnText}>Continue to Rates & Shift →</Text>
+                    <Text style={ui.submitBtnText}>Continue to Shift Schedule →</Text>
                   </TouchableOpacity>
                 </View>
               )}
@@ -871,13 +954,19 @@ const PlacementsTab = () => {
                     ))}
                   </View>
 
-                  <TouchableOpacity style={ui.submitBtn} onPress={() => setStep(3)} activeOpacity={0.7}>
-                    <Text style={ui.submitBtnText}>Calculate Live Margin →</Text>
-                  </TouchableOpacity>
+                  {isAdmin ? (
+                    <TouchableOpacity style={ui.submitBtn} onPress={() => setStep(3)} activeOpacity={0.7}>
+                      <Text style={ui.submitBtnText}>Configure Billing & Margin →</Text>
+                    </TouchableOpacity>
+                  ) : (
+                    <TouchableOpacity style={ui.submitBtn} onPress={handleFinishPlacement} activeOpacity={0.7}>
+                      <Text style={ui.submitBtnText}>Confirm Placement Schedule</Text>
+                    </TouchableOpacity>
+                  )}
                 </View>
               )}
 
-              {step === 3 && (
+              {step === 3 && isAdmin && (
                 <View>
                   <Text style={ui.modalSub}>Configure client pricing and caregiver pay:</Text>
 
@@ -902,7 +991,7 @@ const PlacementsTab = () => {
                   {/* Live Margin Card */}
                   <View style={[ui.marginBox, { backgroundColor: '#f0fdf4', borderColor: '#bbf7d0', borderWidth: 1 }]}>
                     <View>
-                      <Text style={[ui.marginSub, { color: '#166534' }]}>YOUR MARGIN</Text>
+                      <Text style={[ui.marginSub, { color: '#166534' }]}>AGENCY MARGIN</Text>
                       <Text style={[ui.marginVal, { color: '#15803d', fontSize: 18 }]}>
                         ₹{liveMargin.toLocaleString('en-IN')} /mo
                       </Text>
@@ -930,7 +1019,7 @@ const PlacementsTab = () => {
   );
 };
 
-// ── TAB 5: MONEY & LEDGER ────────────────────────────────────────────────────
+// ── TAB 5: MONEY & LEDGER (ADMIN ONLY - TOTALLY HIDDEN FOR TEAM LEAD) ────────
 const MoneyTab = () => {
   const [subTab, setSubTab] = useState('To collect');
   const [recordModal, setRecordModal] = useState(false);
@@ -989,11 +1078,10 @@ const MoneyTab = () => {
   return (
     <SafeAreaView edges={['top']} style={ui.safeContainer}>
       <View style={ui.screen}>
-        {/* Header */}
         <View style={ui.headerWithAction}>
           <View>
             <Text style={ui.pageTitle}>Money & Ledger</Text>
-            <Text style={ui.pageSub}>Receivables, payouts & financial ledger</Text>
+            <Text style={ui.pageSub}>Executive financial ledger, receivables & staff payouts</Text>
           </View>
         </View>
 
@@ -1127,7 +1215,7 @@ const MoneyTab = () => {
           </ScrollView>
         )}
 
-        {/* Modal: Record Client Payment */}
+        {/* Modal: Record Collection */}
         <Modal visible={recordModal} transparent animationType="slide">
           <View style={ui.modalOverlay}>
             <View style={ui.modalCard}>
@@ -1171,8 +1259,9 @@ const MoneyTab = () => {
   );
 };
 
-// ── ROOT FLORENCE NIGHTINGALES TAB NAVIGATOR ─────────────────────────────────
-export default function FlorenceNightingalesDashboard({ token, onLogout }) {
+// ── ROOT TAB NAVIGATOR WITH ROLE-BASED VISIBILITY ─────────────────────────────
+export default function FlorenceNightingalesDashboard({ token, userRole = 'ADMIN', onLogout }) {
+  const isAdmin = userRole === 'ADMIN';
   const insets = useSafeAreaInsets();
   const bottomPadding = Math.max(insets.bottom, Platform.OS === 'android' ? 14 : 8);
   const tabHeight = 64 + bottomPadding;
@@ -1226,12 +1315,22 @@ export default function FlorenceNightingalesDashboard({ token, onLogout }) {
       })}
     >
       <Tab.Screen name="Today">
-        {(props) => <TodayTab {...props} onLogout={onLogout} />}
+        {(props) => <TodayTab {...props} userRole={userRole} onLogout={onLogout} />}
       </Tab.Screen>
-      <Tab.Screen name="Caregivers" component={CaregiversTab} />
-      <Tab.Screen name="Clients" component={ClientsTab} />
-      <Tab.Screen name="Placements" component={PlacementsTab} />
-      <Tab.Screen name="Money" component={MoneyTab} />
+      <Tab.Screen name="Caregivers">
+        {(props) => <CaregiversTab {...props} userRole={userRole} />}
+      </Tab.Screen>
+      <Tab.Screen name="Clients">
+        {(props) => <ClientsTab {...props} userRole={userRole} />}
+      </Tab.Screen>
+      <Tab.Screen name="Placements">
+        {(props) => <PlacementsTab {...props} userRole={userRole} />}
+      </Tab.Screen>
+      
+      {/* MONEY TAB: Strictly available for ADMIN only! Completely hidden for TEAM_LEAD */}
+      {isAdmin && (
+        <Tab.Screen name="Money" component={MoneyTab} />
+      )}
     </Tab.Navigator>
   );
 }
@@ -1265,6 +1364,18 @@ const ui = StyleSheet.create({
     color: '#64748b',
     marginTop: 2,
     fontWeight: '500',
+  },
+  roleBadge: {
+    alignSelf: 'flex-start',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+    marginTop: 6,
+  },
+  roleBadgeText: {
+    fontSize: 10,
+    fontWeight: '900',
+    letterSpacing: 0.5,
   },
   signoutBtn: {
     backgroundColor: '#fee2e2',
